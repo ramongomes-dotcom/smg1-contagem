@@ -556,21 +556,20 @@ function renderCharts(sh){
     const hasPlan=sortPlan>0;
     const sortDone=hasPlan?Math.min(sortTotal,sortPlan):sortTotal;
     const sortPend=hasPlan?Math.max(0,sortPlan-sortTotal):0;
-    const sortOver=hasPlan?Math.max(0,sortTotal-sortPlan):0;
     const sortPct=hasPlan?(sortTotal/sortPlan)*100:0;
     const color=hasPlan?(sortPct>=100?'#389e0d':sortPct>=80?'#d46b08':'#cf1322'):'#389e0d';
     const centerLbl=hasPlan?fmtPct(sortPct):(sortTotal>0?fmtN(sortTotal):'—');
     const centerSub=hasPlan?fmtN(sortTotal)+' pcts':(sortTotal>0?'sem meta':'sem dados');
-    const dataArr=hasPlan?[sortDone,sortPend,sortOver]:[sortTotal];
-    const labelArr=hasPlan?['Realizado','Pendente','Acima da Meta']:['Realizado'];
-    const colorArr=hasPlan?['rgba(82,196,26,.85)','rgba(255,77,79,.85)','rgba(24,144,255,.85)']:['rgba(82,196,26,.85)'];
+    const dataArr=hasPlan?[sortDone,sortPend]:[sortTotal];
+    const labelArr=hasPlan?['Realizado','Pendente']:['Realizado'];
+    const colorArr=['rgba(82,196,26,.85)','rgba(255,77,79,.85)'];
     chartInstances[sh+'_sort']=new Chart(ctx1,{
       type:'doughnut',
       data:{
         labels:labelArr.filter((_,i)=>dataArr[i]>0),
         datasets:[{
           data:dataArr.filter(v=>v>0),
-          backgroundColor:colorArr.filter((_,i)=>dataArr[i]>0),
+          backgroundColor:colorArr.filter((_,i)=>(dataArr[i]||0)>0),
           borderColor:'#fff',borderWidth:3,hoverOffset:8,
         }]
       },
@@ -595,14 +594,14 @@ function renderCharts(sh){
     const etiqGM=c.totalGM;
     const etiqVol=c.totalVol;
     const hasPlanE=c.planTotal>0;
-    const etiqPend=hasPlanE?Math.max(0,c.planTotal-c.totalAll):0;
-    const etiqOver=hasPlanE?Math.max(0,c.totalAll-c.planTotal):0;
+    const etiqReal=c.totalAll;
+    const etiqPend=hasPlanE?Math.max(0,c.planTotal-etiqReal):0;
     const etiqPct=c.pctTotal;
     const color2=hasPlanE?(etiqPct>=100?'#389e0d':etiqPct>=80?'#d46b08':'#cf1322'):'#389e0d';
-    const rawData=[etiqGM,etiqVol,hasPlanE?etiqPend:0,hasPlanE?etiqOver:0];
+    const rawData=hasPlanE?[etiqReal,etiqPend]:[etiqReal];
     const sliceData=rawData.filter(v=>v>0);
-    const sliceLabels=['GM (Linha)','Volumoso','Pendente','Acima Meta'].filter((_,i)=>rawData[i]>0);
-    const sliceColors=['rgba(82,196,26,.85)','rgba(56,158,13,.85)','rgba(255,77,79,.85)','rgba(24,144,255,.85)'].filter((_,i)=>rawData[i]>0);
+    const sliceLabels=hasPlanE?['Realizado','Pendente']:['Realizado'];
+    const sliceColors=['rgba(82,196,26,.85)','rgba(255,77,79,.85)'];
     chartInstances[sh+'_etiq']=new Chart(ctx2,{
       type:'doughnut',
       data:{
@@ -626,7 +625,7 @@ function renderCharts(sh){
           }}}
         }
       },
-      plugins:[centerText('Etiq',hasPlanE?fmtPct(etiqPct):(c.totalAll>0?fmtN(c.totalAll):'—'),hasPlanE?fmtN(c.totalAll)+' pcts':(c.totalAll>0?'sem meta':'sem dados'),color2)]
+      plugins:[centerText('Etiq',hasPlanE?fmtPct(etiqPct):(etiqReal>0?fmtN(etiqReal):'—'),hasPlanE?fmtN(etiqReal)+' pcts':(etiqReal>0?'sem meta':'sem dados'),color2)]
     });
   }
 }
