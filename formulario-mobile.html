@@ -163,13 +163,13 @@ body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%
           <label style="display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--sub);margin-bottom:6px">Vol. Planejado</label>
           <input type="number" id="f-vol-plan" inputmode="numeric" placeholder="0"
             style="width:100%;padding:13px 8px;border:2px solid var(--border);border-radius:10px;font-size:22px;font-weight:900;text-align:center;color:var(--blk);font-family:inherit;-webkit-appearance:none"
-            onchange="saveVolume()">
+            oninput="saveVolume()" onchange="saveVolume()">
         </div>
         <div>
           <label style="display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--sub);margin-bottom:6px">Vol. Roteirizado</label>
           <input type="number" id="f-vol-roteir" inputmode="numeric" placeholder="0"
             style="width:100%;padding:13px 8px;border:2px solid var(--border);border-radius:10px;font-size:22px;font-weight:900;text-align:center;color:var(--blk);font-family:inherit;-webkit-appearance:none"
-            onchange="saveVolume()">
+            oninput="saveVolume()" onchange="saveVolume()">
         </div>
       </div>
     </div>
@@ -429,10 +429,13 @@ function selectShift(sh){
 
 function saveVolume(){
   if(!curShift)return;
-  const p=parseFloat(document.getElementById('f-vol-plan').value)||0;
-  const r=parseFloat(document.getElementById('f-vol-roteir').value)||0;
-  if(p>0)S[curShift].volPlan=p;
-  if(r>0)S[curShift].volRoteir=r;
+  const pEl=document.getElementById('f-vol-plan');
+  const rEl=document.getElementById('f-vol-roteir');
+  if(!pEl||!rEl)return;
+  const p=parseFloat(pEl.value)||0;
+  const r=parseFloat(rEl.value)||0;
+  S[curShift].volPlan=p;
+  S[curShift].volRoteir=r;
   saveState();
 }
 
@@ -617,6 +620,7 @@ function validate(){
 }
 function goNext(){
   if(!validate())return;
+  if(curStep===1)saveVolume();
   if(curStep===2)saveStep2();
   else if(curStep===3)saveStep3();
   else if(curStep===4)saveStep4();
