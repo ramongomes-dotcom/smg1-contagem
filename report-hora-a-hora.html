@@ -711,13 +711,17 @@ function renderShift(sh){
       <div class="chart-title">🗂 Sorting — Realizado vs Meta
         <span><span class="badge ${sortBadge}">${fmtPct(sortPct)}</span> ${fmtN(sortTotal)} pcts acumulados</span>
       </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><label style="font-size:10px;font-weight:800;color:#888;text-transform:uppercase;white-space:nowrap">🎯 Meta Vol.Roteirizado:</label><input type="number" class="ci" value="${s.volRoteir||''}" placeholder="0" style="font-size:15px;font-weight:700;color:#1a1a1a;border-bottom:2px solid #f5c800;padding:2px 6px;width:100px;text-align:center" onchange="S['${sh}'].volRoteir=+this.value;saveState();setTimeout(()=>renderCharts('${sh}'),50)"><span style="font-size:11px;color:#bbb">pcts</span></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><label style="font-size:10px;font-weight:800;color:#888;text-transform:uppercase;white-space:nowrap">🎯 Meta Roteirizado:</label><input type="number" class="ci" value="${s.volRoteir||''}" placeholder="0" style="font-size:15px;font-weight:700;color:#1a1a1a;border-bottom:2px solid #f5c800;padding:2px 6px;width:110px;text-align:center" onchange="S['${sh}'].volRoteir=+this.value;saveState();setTimeout(()=>renderCharts('${sh}'),50)"><span style="font-size:11px;color:#bbb">pcts</span></div>
       <div class="chart-wrap"><canvas id="cs-${sh}"></canvas></div>
     </div>
     <div class="chart-card">
       <div class="chart-title">📦 Etiquetagem — Realizado vs Meta
         <span><span class="badge ${etiqBadge}">${fmtPct(c.pctTotal)}</span> ${fmtN(c.totalAll)} pcts acumulados</span>
       </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><label style="font-size:10px;font-weight:800;color:#888;text-transform:uppercase;white-space:nowrap">🎯 Meta Planejado:</label><input type="number" class="ci" value="${s.volPlan||''}" placeholder="0" style="font-size:15px;font-weight:700;color:#1a1a1a;border-bottom:2px solid #f5c800;padding:2px 6px;width:110px;text-align:center" onchange="S['${sh}'].volPlan=+this.value;saveState();setTimeout(()=>renderCharts('${sh}'),50)"><span style="font-size:11px;color:#bbb">pcts</span></div>
       <div class="chart-wrap"><canvas id="ce-${sh}"></canvas></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><label style="font-size:10px;font-weight:800;color:#888;text-transform:uppercase;white-space:nowrap">🎯 Meta Vol.Planejado:</label><input type="number" class="ci" value="${s.volPlan||''}" placeholder="0" style="font-size:15px;font-weight:700;color:#1a1a1a;border-bottom:2px solid #f5c800;padding:2px 6px;width:100px;text-align:center" onchange="S['${sh}'].volPlan=+this.value;saveState();setTimeout(()=>renderCharts('${sh}'),50)"><span style="font-size:11px;color:#bbb">pcts</span></div>
     </div>
   </div>`;
 
