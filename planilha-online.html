@@ -449,10 +449,15 @@ function centerPlugin(val,sub,color){
 
 function renderCharts(){
   // Inject chart row if not present
-  const content=document.getElementById('content');
   if(!document.getElementById('charts-row')){
     const tpl=document.getElementById('tpl-charts').content.cloneNode(true);
-    content.insertBefore(tpl,content.firstChild);
+    // Inserir após o summary-grid (KPIs), não no início
+    const kpiGrid=document.querySelector('.summary-grid');
+    if(kpiGrid && kpiGrid.parentNode){
+      kpiGrid.parentNode.insertBefore(tpl, kpiGrid.nextSibling);
+    } else {
+      document.getElementById('content').appendChild(tpl);
+    }
   }
 
   const sh=curShift; const s=S[sh]; const c=calc(sh);
