@@ -145,7 +145,12 @@ body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%
   <div id="step-1">
     <div class="card">
       <div class="card-title"><span class="icon">🗓</span>Turno</div>
-      <div class="shift-grid" id="shift-grid"></div>
+      <div class="shift-grid" id="shift-grid">
+        <div class="shift-tile" id="tile-AM" onclick="selectShift('AM')">AM<div class="sub">01:00–07:00</div></div>
+        <div class="shift-tile" id="tile-PM" onclick="selectShift('PM')">PM<div class="sub">09:00–13:00</div></div>
+        <div class="shift-tile" id="tile-SD" onclick="selectShift('SD')">SD<div class="sub">04:00–05:00</div></div>
+        <div class="shift-tile" id="tile-CHP" onclick="selectShift('CHP')">CHP<div class="sub">17:30–21:30</div></div>
+      </div>
       <div class="brk-field" id="brk-field">
         <label id="brk-label">☕ Horário do Almoço</label>
         <select id="brk-select" onchange="setBrkSlot(this.value)"></select>
@@ -356,18 +361,15 @@ function updateUI(){try{
 //  STEP 1
 // ═══════════════════════════
 function buildStep1(){
-  // shift tiles
-  document.getElementById('shift-grid').innerHTML=SHIFTS.map(sh=>`
-    <div class="shift-tile ${curShift===sh?'active':''}" onclick="selectShift('${sh}')">
-      ${sh}<div class="sub">${SHIFT_TIMES[sh]}</div>
-    </div>`).join('');
-  // hour card
-  if(curShift){
-    document.getElementById('hour-card').style.display='block';
-    buildHourGrid();
-  } else {
-    document.getElementById('hour-card').style.display='none';
-  }
+  // Atualizar visual dos tiles
+  SHIFTS.forEach(sh=>{
+    const el=document.getElementById('tile-'+sh);
+    if(el) el.className='shift-tile'+(curShift===sh?' active':'');
+  });
+  // Hour card
+  const hc=document.getElementById('hour-card');
+  if(hc) hc.style.display=curShift?'block':'none';
+  if(curShift) buildHourGrid();
 }
 
 function selectShift(sh){
