@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMG1 Contagem — Report Hora a Hora</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+
+
+
+<style>
+:root{
+  --blue:#1a1a1a;--blue2:#0050b3;--yellow:#FFE600;
+  --green:#52c41a;--green-bg:#f6ffed;--green-b:#b7eb8f;
+  --red:#ff4d4f;--red-bg:#fff1f0;--red-b:#ffa39e;
+  --orange:#fa8c16;--orange-bg:#fff7e6;
+  --border:#e0e0e0;--bg:#f0f2f5;--card:#fff;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:#1a1a1a;font-size:13px;}
+body::before{
+  content:'';
+  position:fixed;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:520px;height:520px;
+  background-image:url('smg1-logo.png');
+  background-size:contain;
+  background-repeat:no-repeat;
+  background-position:center;
+  opacity:0.06;
+  pointer-events:none;
+  z-index:0;
+}
+.wrap,.hdr,.tabs-wrap{position:relative;z-index:1;}
+
+/* ── Header ── */
+.hdr{background:var(--blue);color:#fff;padding:10px 22px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.25);}
+.hdr-left{display:flex;align-items:center;gap:12px;}
+.ml-badge{background:#f5c800;color:#1a1a1a;font-weight:900;font-size:12px;padding:5px 10px;border-radius:5px;letter-spacing:.3px;white-space:nowrap;}
+.hdr h1{font-size:16px;font-weight:800;letter-spacing:.3px;}
+.hdr h1 em{color:var(--yellow);font-style:normal;}
+.hdr-right{display:flex;align-items:center;gap:8px;}
+.hdr input[type=date]{padding:5px 9px;border:none;border-radius:4px;font-size:13px;cursor:pointer;background:#fff;color:#111;}
+.btn{padding:6px 13px;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:700;transition:all .15s;}
+.btn:hover{filter:brightness(.9);}
+.btn-w{background:#f5c800;color:#1a1a1a;font-weight:800;}
+.btn-launch{background:#f5c800;color:#1a1a1a;font-weight:900;font-size:14px;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;letter-spacing:.3px;box-shadow:0 2px 6px rgba(245,200,0,.4);transition:all .15s;}
+.btn-launch:hover{background:#ffe033;transform:scale(1.04);box-shadow:0 3px 10px rgba(245,200,0,.55);}
+.btn-y{background:var(--yellow);color:var(--blue);}
+.btn-ghost{background:rgba(245,200,0,.2);color:#f5c800;border:1px solid rgba(245,200,0,.5);}
+
+/* ── Tabs ── */
+.tabs{background:#fff;border-bottom:2px solid var(--border);display:flex;padding:0 22px;gap:2px;}
+.tab{padding:11px 28px;cursor:pointer;border:none;background:transparent;font-size:14px;font-weight:800;color:#999;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;letter-spacing:.8px;}
+.tab.active{color:var(--blue);border-bottom-color:var(--yellow);}
+.tab:hover:not(.active){color:var(--blue);background:#f5f7ff;}
+
+/* ── Content ── */
+.content{max-width:1500px;margin:0 auto;padding:16px 22px;}
+.pane{display:none;}.pane.active{display:block;}
+
+/* ── Config strip ── */
+.cfg{background:var(--card);border-radius:8px;padding:13px 16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.07);display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:12px;align-items:end;}
+.cfg label{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#999;margin-bottom:4px;}
+.cfg input,.cfg select{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:13px;color:#111;}
+.cfg input:focus,.cfg select:focus{outline:2px solid var(--blue);border-color:transparent;}
+.cfg-section-label{font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.8px;color:#7a5800;background:#fff8cc;padding:2px 6px;border-radius:3px;white-space:nowrap;}
+
+/* ── HC boxes ── */
+.hc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:12px;}
+.hc-box{border:1px solid var(--border);border-radius:6px;padding:9px 11px;background:#fafafa;}
+.hc-box.calc-box{background:#fffbe6;border-color:#ffe066;}
+.hc-box label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#888;display:block;margin-bottom:3px;}
+.hc-box input{width:100%;border:none;font-size:19px;font-weight:900;color:var(--blue);padding:0;background:transparent;}
+.hc-box input.red-val{color:var(--red);}
+.hc-box input.green-val{color:#389e0d;}
+.hc-box input:focus{outline:none;border-bottom:2px solid var(--blue);}
+
+/* ── Progress bar ── */
+.prog-wrap{height:7px;background:#e0e0e0;border-radius:4px;overflow:hidden;margin-top:5px;}
+.prog-bar{height:100%;border-radius:4px;transition:width .4s;}
+.prog-green{background:var(--green);}
+.prog-orange{background:var(--orange);}
+.prog-red{background:var(--red);}
+
+/* ── KPI row ── */
+.kpis{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+.kpi{flex:1 1 140px;background:var(--card);border-radius:8px;padding:13px 15px;box-shadow:0 1px 4px rgba(0,0,0,.08);border-left:4px solid var(--blue2);}
+.kpi.g{border-left-color:var(--green);}
+.kpi.r{border-left-color:var(--red);}
+.kpi.o{border-left-color:var(--orange);}
+.kpi.y{border-left-color:var(--yellow);}
+.kpi-lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#aaa;}
+.kpi-val{font-size:24px;font-weight:900;color:#222;margin:5px 0 2px;line-height:1;}
+.kpi-val.good{color:#389e0d;}
+.kpi-val.bad{color:#cf1322;}
+.kpi-val.warn{color:#d46b08;}
+.kpi-sub{font-size:11px;color:#bbb;}
+
+/* ── Chart row ── */
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+@media(max-width:900px){.chart-row{grid-template-columns:1fr;}}
+.chart-card{background:var(--card);border-radius:8px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.chart-title{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:#1a1a1a;margin-bottom:14px;border-bottom:2px solid #f5c800;padding-bottom:8px;}
+.chart-title span{font-size:10px;font-weight:600;color:#aaa;text-transform:none;letter-spacing:0;float:right;margin-top:1px;}
+.chart-wrap{position:relative;height:220px;}
+
+/* ── Section ── */
+.sec{background:var(--card);border-radius:8px;padding:15px 16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.sec-title{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:#1a1a1a;padding-bottom:9px;margin-bottom:12px;border-bottom:2px solid #f5c800;display:flex;justify-content:space-between;align-items:center;}
+.toggle-btn{font-size:11px;font-weight:700;color:#7a5800;cursor:pointer;background:#fffbe6;border:1px solid #ffe066;border-radius:4px;padding:3px 9px;}
+.collapsible{transition:all .2s;}
+.tbl-wrap{overflow-x:auto;}
+
+/* ── Tables ── */
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{background:var(--blue);color:#fff;padding:7px 10px;text-align:center;font-weight:700;white-space:nowrap;font-size:11px;}
+th.left{text-align:left;}
+td{padding:4px 8px;border:1px solid #ececec;text-align:center;vertical-align:middle;}
+td.left{text-align:left;min-width:150px;}
+tr.rTot td{background:#e6f0ff;font-weight:700;}
+tr.rPlan td{background:#fff7e6;}
+tr.rGap td{font-weight:700;}
+tr.rPct td{background:#f6f8ff;font-weight:700;}
+tr.rHead td{background:#fffbe6;font-weight:800;font-size:11px;letter-spacing:.3px;color:#7a5800;}
+tr:hover td{background:#e8f0fe!important;}
+
+.ci{width:100%;border:none;background:transparent;text-align:center;font-size:12px;padding:2px 0;color:inherit;font-family:inherit;}
+.ci:focus{outline:2px solid #f5c800;border-radius:2px;background:#fff;}
+.ci.left{text-align:left;}
+
+.good{color:#389e0d;font-weight:700;}
+.bad{color:#cf1322;font-weight:700;}
+.warn{color:#d46b08;font-weight:700;}
+
+.oco-sel{width:100%;border:1px solid var(--border);border-radius:3px;padding:3px 4px;font-size:11px;background:#fff;}
+.oco-txt{width:100%;border:1px solid var(--border);border-radius:3px;padding:4px 6px;font-size:12px;min-width:140px;resize:none;height:36px;font-family:inherit;}
+
+/* ── Status badge ── */
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;}
+.badge-g{background:var(--green-bg);color:#389e0d;border:1px solid var(--green-b);}
+.badge-r{background:var(--red-bg);color:#cf1322;border:1px solid var(--red-b);}
+.badge-o{background:var(--orange-bg);color:#d46b08;border:1px solid #ffd591;}
+
+
+/* ═══════════════════════════════════
+   MOBILE — max-width: 768px
+═══════════════════════════════════ */
+@media(max-width:768px){
+  /* Header */
+  .hdr{padding:8px 12px;}
+  .ml-badge{font-size:10px;padding:4px 7px;}
+  .hdr h1{font-size:13px;}
+  .hdr-right{gap:4px;}
+  .hdr-right .btn{font-size:11px;padding:5px 8px;}
+  .hdr input[type=date]{font-size:11px;padding:4px 6px;}
+
+  /* Tabs */
+  .tabs{padding:0 8px;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{padding:10px 16px;font-size:12px;white-space:nowrap;flex-shrink:0;}
+
+  /* Content */
+  .content{padding:10px 10px;}
+
+  /* Config panel */
+  .cfg{grid-template-columns:repeat(2,1fr);gap:8px;padding:10px;}
+  .cfg input,.cfg select{font-size:16px!important;}
+
+  /* KPIs: 2 colunas */
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .kpi{flex:none;padding:10px 12px;}
+  .kpi-val{font-size:20px;}
+
+  /* HC grid: 2 colunas */
+  .hc-grid{grid-template-columns:repeat(2,1fr);}
+  .hc-box input{font-size:16px!important;}
+
+  /* Charts */
+  .chart-row{grid-template-columns:1fr;}
+  .chart-wrap{height:180px;}
+
+  /* Sections */
+  .sec{padding:12px 10px;}
+  .sec-title{font-size:11px;}
+  .toggle-btn{padding:5px 10px;font-size:11px;min-height:32px;}
+
+  /* Tables */
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  table{font-size:11px;}
+  th{padding:6px 7px;font-size:10px;}
+  td{padding:3px 5px;}
+  .ci{font-size:11px;}
+  .oco-txt{min-width:100px;font-size:12px;}
+  .oco-sel{font-size:12px;}
+
+  /* Inputs nas tabelas — evitar zoom no iOS */
+  input[type=number],input[type=text],input[type=time],select{
+    font-size:16px!important;
+  }
+}
+
+/* ═══════════════════════════════════
+   MOBILE — max-width: 480px
+═══════════════════════════════════ */
+@media(max-width:480px){
+  .hdr h1 em{display:none;}
+  .kpis{grid-template-columns:1fr 1fr;}
+  .kpi-val{font-size:18px;}
+  .cfg{grid-template-columns:1fr 1fr;}
+  .hc-grid{grid-template-columns:repeat(2,1fr);}
+  .chart-wrap{height:160px;}
+  .content{padding:8px 6px;}
+  .sec{padding:10px 8px;}
+}
+
+
+
+
+
+/* ─ MODAL COMPARTILHAR ─ */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:999;display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:16px;padding:24px 20px;max-width:440px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.25);position:relative;}
+.modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#888;}
+.modal h2{font-size:16px;font-weight:900;color:#1a1a1a;margin-bottom:18px;border-bottom:2px solid #f5c800;padding-bottom:10px;}
+.share-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+.share-card{background:#f8f9ff;border:1px solid #e0e8ff;border-radius:12px;padding:14px;text-align:center;}
+.share-card .sc-title{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:8px;}
+.share-card img{width:120px;height:120px;border-radius:6px;margin-bottom:8px;}
+.share-card .sc-url{font-size:10px;color:#888;word-break:break-all;line-height:1.4;}
+.share-btns{display:flex;flex-direction:column;gap:8px;}
+.btn-wpp{background:#25D366;color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-wpp:hover{background:#1da851;}
+.btn-copy{background:#f5f5f5;color:#333;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;}
+.btn-copy:hover{background:#e8e8e8;}
+.netlify-tip{background:#fffbe6;border:1px solid #ffe066;border-radius:10px;padding:12px 14px;font-size:12px;color:#7a5800;line-height:1.7;margin-top:14px;}
+.netlify-tip strong{display:block;margin-bottom:4px;font-size:13px;}
+.netlify-tip a{color:#0050b3;font-weight:700;}
+
+@media print{
+  .hdr-right,.tabs,.btn,.toggle-btn{display:none!important;}
+  .pane{display:block!important;page-break-after:always;}
+  body{background:#fff;}
+  .sec,.kpi,.cfg,.chart-card{box-shadow:none;border:1px solid #ddd;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="ml-badge">SMG1 - Contagem</div>
+    <h1>Report <em>Hora a Hora</em></h1>
+  </div>
+  <div class="hdr-right">
+    <a href="formulario-lancamento.html" target="_blank" style="text-decoration:none">
+      <button class="btn btn-launch" title="Abrir formulário de lançamento">＋ Lançar</button>
+    </a>
+    <label style="color:#ccc;font-size:11px;margin-right:2px">Data:</label>
+    <input type="date" id="globalDate" onchange="onDateChange(this.value)">
+    <button class="btn btn-ghost" onclick="window.print()">🖨 Imprimir</button>
+    <button class="btn btn-y" onclick="saveState();showToast('Dados salvos!')">💾 Salvar</button>
+    <button class="btn btn-ghost" onclick="if(confirm('Zerar todos os turnos para novo dia?'))resetAllData()">📅 Novo Dia</button>
+    <button class="btn btn-ghost" onclick="openFirebaseModal()" title="Configurar sincronização online" style="font-size:11px">⚙️ Firebase</button>
+    <span id="fb-status" style="font-size:11px;font-weight:800;color:#888;padding:0 4px">⚫ Local</span>
+    <button class="btn btn-w" onclick="openShareModal()" title="Compartilhar">📤 Compartilhar</button>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div id="toast" style="position:fixed;bottom:24px;right:24px;background:#003366;color:#fff;padding:10px 18px;border-radius:6px;font-size:13px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.25);display:none;z-index:999;"></div>
+
+<!-- ── TABS ── -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('AM')">AM</button>
+  <button class="tab" onclick="switchTab('PM')">PM</button>
+  <button class="tab" onclick="switchTab('SD')">SD</button>
+  <button class="tab" onclick="switchTab('CHP')">CHP</button>
+</div>
+
+<!-- ── PANES ── -->
+<div class="content">
+  <div id="pane-AM" class="pane active"></div>
+  <div id="pane-PM" class="pane"></div>
+  <div id="pane-SD" class="pane"></div>
+  <div id="pane-CHP" class="pane"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  FIREBASE CONFIG — cole aqui os dados do seu projeto
+//  (Obtenha em: console.firebase.google.com → Configurações)
+// ═══════════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey:            "",   // ← cole aqui
+  authDomain:        "",
+  databaseURL:       "",   // ← OBRIGATÓRIO: https://SEU-PROJETO-rtdb.firebaseio.com
+  projectId:         "",
+  storageBucket:     "",
+  messagingSenderId: "",
+  appId:             ""
+};
+
+let _db = null;
+function isFirebaseReady(){
+  if(_db) return true;
+  if(!FIREBASE_CONFIG.databaseURL) return false;
+  try{
+    firebase.app();
+  }catch(e){
+    firebase.initializeApp(FIREBASE_CONFIG);
+  }
+  _db = firebase.database();
+  return true;
+}
+
+function setOnlineStatus(online){
+  const el=document.getElementById('fb-status');
+  if(!el)return;
+  el.textContent = online ? '🟢 Online' : '🔴 Offline';
+  el.style.color  = online ? '#52c41a' : '#ff4d4f';
+}
+
+// ═══════════════════════════════════════════════════════
+//  CONSTANTS & STATE
+// ═══════════════════════════════════════════════════════
+const SHIFTS = ['AM','PM','SD','CHP'];
+const N_GM=5, N_VOL=4, N_HRS=7;
+const DEFS = {
+  AM: {start:'01:00',hrs:6,brk:3},
+  PM: {start:'09:00',hrs:4,brk:2},
+  SD: {start:'04:00',hrs:1,brk:-1},
+  CHP:{start:'17:30',hrs:5,brk:2},
+};
+// Horários fixos por turno
+const FIXED_HOURS_BASE = {
+  AM:  ['01:00-02:00','02:00-03:00','03:00-04:00','04:00-05:00','05:00-06:00','06:00-07:00'],
+  SD:  ['04:00-05:00'],
+  CHP: ['17:30-18:30','18:30-19:30','19:00-20:00','20:00-21:00','21:00-21:30'],
+};
+const BREAK_LABEL={AM:'ALMOÇO',PM:'ALMOÇO',CHP:'JANTAR'};
+let S={}, activeShift='AM';
+const chartInstances={};
+
+function mkShift(sh){
+  const d=DEFS[sh];
+  return{
+    startLine:d.start,startVol:d.start,endLine:'',numHrs:d.hrs,brkSlot:d.brk,
+    volPlan:0,volRoteir:0,
+    hcNecessario:0,hcFixos:0,hcPT:0,hcTemp:0,hcDiaristas:0,hcAusJust:0,hcAusInjust:0,
+    gmNames:Array.from({length:N_GM},(_,i)=>`Estação ${i+1} Linha`),
+    volNames:Array.from({length:N_VOL},(_,i)=>`Estação ${i+1} Volumoso`),
+    gmData:Array.from({length:N_GM},()=>Array(N_HRS).fill('')),
+    volData:Array.from({length:N_VOL},()=>Array(N_HRS).fill('')),
+    sortData:Array(N_HRS).fill(''),
+    ocoTipo:Array(N_HRS).fill(''),
+    ocoDesc:Array(N_HRS).fill(''),
+    ocoAcao:Array(N_HRS).fill(''),
+  };
+}
+
+function resetAllData(){
+  SHIFTS.forEach(sh=>{ S[sh]=mkShift(sh); });
+  saveState();
+  SHIFTS.forEach(sh=>renderShift(sh));
+  showToast('📅 Novo dia — planilha zerada!');
+}
+
+function onDateChange(newDate){
+  localStorage.setItem('rha-date',newDate);
+  saveState();
+}
+
+async function initState(){
+  // 1) Carrega localStorage (rápido, offline)
+  const raw=localStorage.getItem('rha-v3');
+  if(raw){try{S=JSON.parse(raw);}catch(e){}}
+  SHIFTS.forEach(sh=>{if(!S[sh])S[sh]=mkShift(sh);});
+  const savedDate=localStorage.getItem('rha-date')||'';
+  const today=new Date().toISOString().slice(0,10);
+  document.getElementById('globalDate').value = savedDate || today;
+  // Se data salva for anterior a hoje → perguntar se zera
+  if(savedDate && savedDate < today){
+    if(confirm(`📅 Data salva: ${savedDate}\nHoje é ${today}\n\nIniciar planilha zerada para hoje?`)){
+      document.getElementById('globalDate').value = today;
+      localStorage.setItem('rha-date', today);
+      SHIFTS.forEach(sh=>{ S[sh]=mkShift(sh); });
+    }
+  }
+
+  // 2) Sincroniza com Firebase se configurado
+  if(isFirebaseReady()){
+    try{
+      const snap = await _db.ref('rha-v3').get();
+      if(snap.exists()){
+        S = snap.val();
+        SHIFTS.forEach(sh=>{if(!S[sh])S[sh]=mkShift(sh);});
+        localStorage.setItem('rha-v3',JSON.stringify(S));
+      }
+      setOnlineStatus(true);
+    }catch(e){ setOnlineStatus(false); console.warn('Firebase load error:',e); }
+  }
+}
+
+function saveState(){
+  localStorage.setItem('rha-v3',JSON.stringify(S));
+  localStorage.setItem('rha-date',document.getElementById('globalDate').value);
+  if(isFirebaseReady()){
+    _db.ref('rha-v3').set(S)
+      .then(()=>setOnlineStatus(true))
+      .catch(e=>{setOnlineStatus(false);console.warn('Firebase save error:',e);});
+  }
+}
+
+function startRealtimeSync(){
+  if(!isFirebaseReady()) return;
+  _db.ref('rha-v3').on('value', snap=>{
+    if(!snap.exists()) return;
+    const remote = snap.val();
+    if(JSON.stringify(remote)===JSON.stringify(S)) return;
+    S = remote;
+    SHIFTS.forEach(sh=>{if(!S[sh])S[sh]=mkShift(sh);});
+    localStorage.setItem('rha-v3',JSON.stringify(S));
+    SHIFTS.forEach(sh=>renderShift(sh));
+    showToast('🔄 Dados atualizados em tempo real');
+  });
+}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.display='block';
+  setTimeout(()=>t.style.display='none',2200);
+}
+
+// ═══════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════
+const num=v=>{const n=parseFloat(String(v).replace(/,/g,'.'));return isNaN(n)?0:n;};
+const fmt=n=>n===0?'—':n.toLocaleString('pt-BR');
+const fmtN=n=>n===0?'0':n.toLocaleString('pt-BR');
+const fmtPct=n=>n===0?'—':(n.toFixed(1)+'%');
+const pctCls=p=>p>=100?'good':p>=80?'warn':'bad';
+const gapCls=g=>g>=0?'good':'bad';
+
+const isBreak=h=>h==='ALMOÇO'||h.startsWith('ALMOÇO')||h.startsWith('JANTAR');
+
+function getHours(sh){
+  if(FIXED_HOURS_BASE[sh]){
+    return FIXED_HOURS_BASE[sh].map((t,i)=>{
+      if(i===S[sh].brkSlot && BREAK_LABEL[sh]) return BREAK_LABEL[sh]+' ('+t+')';
+      return t;
+    });
+  }
+  // PM: compute dynamically from config
+  const s=S[sh];
+  const [h,m]=s.startLine.split(':').map(Number);
+  return Array.from({length:s.numHrs},(_,i)=>{
+    if(i===s.brkSlot)return BREAK_LABEL[sh]||'ALMOÇO';
+    const sh2=(h+i)%24,eh=(h+i+1)%24,p=x=>String(x).padStart(2,'0');
+    return`${p(sh2)}:${p(m)}-${p(eh)}:${p(m)}`;
+  });
+}
+
+function calcShift(sh){
+  const s=S[sh];
+  const hrs=getHours(sh);
+  const active=hrs.map((h,i)=>({h,i})).filter(x=>!isBreak(x.h));
+  const nAct=active.length;
+  const planPerHr=nAct>0?num(s.volPlan)/nAct:0;
+  const sortPlanPerHr=nAct>0?num(s.volRoteir)/nAct:0;
+
+  const gmHrTot=Array(N_HRS).fill(0);
+  const volHrTot=Array(N_HRS).fill(0);
+  s.gmData.forEach(r=>r.forEach((v,i)=>{gmHrTot[i]+=num(v);}));
+  s.volData.forEach(r=>r.forEach((v,i)=>{volHrTot[i]+=num(v);}));
+  const allHrTot=Array(N_HRS).fill(0).map((_,i)=>gmHrTot[i]+volHrTot[i]);
+
+  const gmStnTot=s.gmData.map(r=>r.reduce((a,v)=>a+num(v),0));
+  const volStnTot=s.volData.map(r=>r.reduce((a,v)=>a+num(v),0));
+  const totalGM=gmStnTot.reduce((a,v)=>a+v,0);
+  const totalVol=volStnTot.reduce((a,v)=>a+v,0);
+  const totalAll=totalGM+totalVol;
+  const planTotal=num(s.volPlan);
+  const pctTotal=planTotal>0?(totalAll/planTotal)*100:0;
+
+  // Cumulative actual and plan for etiq
+  let cumAct=0,cumPlan=0;
+  const cumActArr=[],cumPlanArr=[];
+  active.forEach(({i})=>{
+    cumAct+=allHrTot[i]; cumPlan+=planPerHr;
+    cumActArr.push(Math.round(cumAct));
+    cumPlanArr.push(Math.round(cumPlan));
+  });
+
+  // Sort cumulative
+  let cumSort=0;
+  const cumSortArr=[],cumSortPlanArr=[];
+  active.forEach(({i})=>{
+    cumSort+=num(s.sortData[i]);
+    cumSortArr.push(Math.round(cumSort));
+    cumSortPlanArr.push(Math.round(cumSortArr.length*sortPlanPerHr));
+  });
+
+  const hcTotal=Math.max(0,num(s.hcFixos)+num(s.hcPT)+num(s.hcTemp)+num(s.hcDiaristas)-num(s.hcAusJust)-num(s.hcAusInjust));
+  const hcAbsent=num(s.hcAusJust)+num(s.hcAusInjust);
+  const hcBase=num(s.hcFixos)+num(s.hcPT)+num(s.hcTemp); // base sem diaristas
+  const pctHC=hcBase>0?(hcAbsent/hcBase)*100:0; // Absenteísmo %
+
+  return{planPerHr,sortPlanPerHr,gmHrTot,volHrTot,allHrTot,gmStnTot,volStnTot,
+    totalGM,totalVol,totalAll,planTotal,pctTotal,
+    cumActArr,cumPlanArr,cumSortArr,cumSortPlanArr,
+    hcTotal,hcAbsent,hcBase,pctHC,active,nAct};
+}
+
+// ═══════════════════════════════════════════════════════
+//  CHARTS
+// ═══════════════════════════════════════════════════════
+function destroyChart(key){
+  if(chartInstances[key]){chartInstances[key].destroy();delete chartInstances[key];}
+}
+
+function renderCharts(sh){
+  const s=S[sh];
+  const c=calcShift(sh);
+
+  // ── helper: doughnut center-text plugin ──
+  const centerText=(label,val,sub,color)=>({
+    id:'centerText_'+sh,
+    beforeDraw(chart){
+      const {ctx,chartArea:{left,right,top,bottom}}=chart;
+      const cx=(left+right)/2, cy=(top+bottom)/2;
+      ctx.save();
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      // main value
+      ctx.font='700 28px Segoe UI,sans-serif';
+      ctx.fillStyle=color||'#003366';
+      ctx.fillText(val,cx,cy-10);
+      // sub label
+      ctx.font='600 11px Segoe UI,sans-serif';
+      ctx.fillStyle='#aaa';
+      ctx.fillText(sub,cx,cy+14);
+      ctx.restore();
+    }
+  });
+
+  // ── Sorting doughnut ──
+  destroyChart(sh+'_sort');
+  const ctx1=document.getElementById(`cs-${sh}`);
+  if(ctx1){
+    const sortTotal=s.sortData.reduce((a,v)=>a+num(v),0);
+    const sortPlan=num(s.volRoteir);
+    const sortDone=Math.min(sortTotal,sortPlan);
+    const sortPend=Math.max(0,sortPlan-sortTotal);
+    const sortOver=Math.max(0,sortTotal-sortPlan);
+    const sortPct=sortPlan>0?(sortTotal/sortPlan)*100:0;
+    const color=sortPct>=100?'#389e0d':sortPct>=80?'#d46b08':'#cf1322';
+    chartInstances[sh+'_sort']=new Chart(ctx1,{
+      type:'doughnut',
+      data:{
+        labels:['Realizado','Pendente','Acima da Meta'].filter((_,i)=>[sortDone,sortPend,sortOver][i]>0),
+        datasets:[{
+          data:[sortDone,sortPend,sortOver].filter(v=>v>0),
+          backgroundColor:[
+            'rgba(82,196,26,.85)',
+            'rgba(255,77,79,.85)',
+            'rgba(24,144,255,.85)'
+          ].filter((_,i)=>[sortDone,sortPend,sortOver][i]>0),
+          borderColor:'#fff',
+          borderWidth:3,
+          hoverOffset:8,
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        cutout:'68%',
+        plugins:{
+          legend:{position:'bottom',labels:{font:{size:11},boxWidth:12,padding:10}},
+          tooltip:{callbacks:{label:ctx=>{
+            const v=ctx.parsed;const t=sortDone+sortPend+sortOver;
+            return` ${ctx.label}: ${v.toLocaleString('pt-BR')} pcts (${t>0?((v/t)*100).toFixed(1):'0'}%)`;
+          }}}
+        }
+      },
+      plugins:[centerText('Sorting',fmtPct(sortPct),fmtN(sortTotal)+' pcts',color)]
+    });
+  }
+
+  // ── Etiquetagem doughnut ──
+  destroyChart(sh+'_etiq');
+  const ctx2=document.getElementById(`ce-${sh}`);
+  if(ctx2){
+    const etiqGM=c.totalGM;
+    const etiqVol=c.totalVol;
+    const etiqPend=Math.max(0,c.planTotal-c.totalAll);
+    const etiqOver=Math.max(0,c.totalAll-c.planTotal);
+    const etiqPct=c.pctTotal;
+    const color2=etiqPct>=100?'#389e0d':etiqPct>=80?'#d46b08':'#cf1322';
+    const sliceData=[etiqGM,etiqVol,etiqPend,etiqOver].filter(v=>v>0);
+    const sliceLabels=['GM (Linha)','Volumoso','Pendente','Acima Meta'].filter((_,i)=>[etiqGM,etiqVol,etiqPend,etiqOver][i]>0);
+    const sliceColors=['rgba(82,196,26,.85)','rgba(56,158,13,.85)','rgba(255,77,79,.85)','rgba(24,144,255,.85)'].filter((_,i)=>[etiqGM,etiqVol,etiqPend,etiqOver][i]>0);
+    chartInstances[sh+'_etiq']=new Chart(ctx2,{
+      type:'doughnut',
+      data:{
+        labels:sliceLabels,
+        datasets:[{
+          data:sliceData,
+          backgroundColor:sliceColors,
+          borderColor:'#fff',
+          borderWidth:3,
+          hoverOffset:8,
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        cutout:'68%',
+        plugins:{
+          legend:{position:'bottom',labels:{font:{size:11},boxWidth:12,padding:10}},
+          tooltip:{callbacks:{label:ctx=>{
+            const v=ctx.parsed;const t=sliceData.reduce((a,b)=>a+b,0);
+            return` ${ctx.label}: ${v.toLocaleString('pt-BR')} pcts (${t>0?((v/t)*100).toFixed(1):'0'}%)`;
+          }}}
+        }
+      },
+      plugins:[centerText('Etiq',fmtPct(etiqPct),fmtN(c.totalAll)+' pcts',color2)]
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  TOGGLE SECTION
+// ═══════════════════════════════════════════════════════
+function toggle(id){
+  const el=document.getElementById(id);
+  const btn=document.getElementById('btn-'+id);
+  if(el.style.display==='none'){el.style.display='';if(btn)btn.textContent='▲ Recolher';}
+  else{el.style.display='none';if(btn)btn.textContent='▼ Expandir';}
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDER SHIFT
+// ═══════════════════════════════════════════════════════
+function renderShift(sh){
+  const s=S[sh];
+  const c=calcShift(sh);
+  const hrs=getHours(sh);
+  const pW=Math.min(100,c.pctTotal);
+  const pWSort=c.planTotal>0?Math.min(100,(num(s.volRoteir)>0?(s.sortData.reduce((a,v)=>a+num(v),0)/num(s.volRoteir))*100:0)):0;
+  const sortTotal=s.sortData.reduce((a,v)=>a+num(v),0);
+  const sortPct=num(s.volRoteir)>0?(sortTotal/num(s.volRoteir))*100:0;
+
+  let html='';
+
+  // ─ CONFIG ─
+  html+=`<div class="cfg">
+    <div><div class="cfg-section-label">TEMPO</div></div>
+    <div><label>Início Linha</label>
+      <input type="time" value="${s.startLine}" onchange="S['${sh}'].startLine=this.value;saveState();renderShift('${sh}')"></div>
+    <div><label>Início Volumoso</label>
+      <input type="time" value="${s.startVol}" onchange="S['${sh}'].startVol=this.value;saveState()"></div>
+    <div><label>Hora Final</label>
+      <input type="time" value="${s.endLine}" onchange="S['${sh}'].endLine=this.value;saveState()"></div>
+    <div><label>Horas Ativas</label>
+      <select onchange="S['${sh}'].numHrs=+this.value;saveState();renderShift('${sh}')">
+        ${[3,4,5,6,7].map(n=>`<option value="${n}"${s.numHrs==n?' selected':''}>  ${n} horas</option>`).join('')}
+      </select></div>
+    <div><label>Intervalo / Refeição</label>
+      <select onchange="S['${sh}'].brkSlot=+this.value;saveState();renderShift('${sh}')">
+        <option value="-1"${s.brkSlot==-1?' selected':''}>Nenhum</option>
+        ${(()=>{const base=FIXED_HOURS_BASE[sh]||(()=>{const [hh,mm]=s.startLine.split(':').map(Number);return Array.from({length:s.numHrs},(_,i)=>{const s2=(hh+i)%24,e=(hh+i+1)%24,p=x=>String(x).padStart(2,'0');return`${p(s2)}:${p(mm)}-${p(e)}:${p(mm)}`;});})();return base.map((t,i)=>`<option value="${i}"${s.brkSlot==i?' selected':''}>${t}</option>`).join('');})()}
+      </select></div>
+    <div><div class="cfg-section-label">VOLUME</div></div>
+    <div><label>Vol. Planejado</label>
+      <input type="number" value="${s.volPlan||''}" placeholder="0"
+        onchange="S['${sh}'].volPlan=+this.value;saveState();renderShift('${sh}')"></div>
+    <div><label>Vol. Roteirizado</label>
+      <input type="number" value="${s.volRoteir||''}" placeholder="0"
+        onchange="S['${sh}'].volRoteir=+this.value;saveState();renderShift('${sh}')"></div>
+  </div>`;
+
+  // ─ KPIs ─
+  const sortBadge=sortPct>=100?'badge-g':sortPct>=80?'badge-o':'badge-r';
+  const etiqBadge=c.pctTotal>=100?'badge-g':c.pctTotal>=80?'badge-o':'badge-r';
+
+  html+=`<div class="kpis">
+    <div class="kpi">
+      <div class="kpi-lbl">Total Etiquetado</div>
+      <div class="kpi-val">${fmtN(c.totalAll)}</div>
+      <div class="kpi-sub">GM: ${fmtN(c.totalGM)} · Vol: ${fmtN(c.totalVol)}</div>
+    </div>
+    <div class="kpi ${gapCls(c.totalAll-c.planTotal)==='good'?'g':'r'}">
+      <div class="kpi-lbl">GAP Etiquetagem</div>
+      <div class="kpi-val ${gapCls(c.totalAll-c.planTotal)}">${c.totalAll-c.planTotal>=0?'+':''}${fmtN(c.totalAll-c.planTotal)}</div>
+      <div class="kpi-sub">Real − Planejado</div>
+    </div>
+    <div class="kpi ${c.pctHC<=3?'g':c.pctHC<=6?'o':'r'}">
+      <div class="kpi-lbl">Absenteísmo</div>
+      <div class="kpi-val ${c.pctHC<=3?'good':c.pctHC<=6?'warn':'bad'}">${fmtPct(c.pctHC)}</div>
+      <div class="kpi-sub">${c.hcAbsent} ausência(s) · base: ${fmtN(Math.round(c.hcBase||0))} (sem diaristas)</div>
+      <div class="prog-wrap"><div class="prog-bar ${c.pctHC<=3?'prog-green':c.pctHC<=6?'prog-orange':'prog-red'}" style="width:${Math.min(100,c.pctHC*5)}%"></div></div>
+    </div>
+  </div>`;
+
+  // ─ CHARTS ─
+  html+=`<div class="chart-row">
+    <div class="chart-card">
+      <div class="chart-title">🗂 Sorting — Realizado vs Meta
+        <span><span class="badge ${sortBadge}">${fmtPct(sortPct)}</span> ${fmtN(sortTotal)} pcts acumulados</span>
+      </div>
+      <div class="chart-wrap"><canvas id="cs-${sh}"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">📦 Etiquetagem — Realizado vs Meta
+        <span><span class="badge ${etiqBadge}">${fmtPct(c.pctTotal)}</span> ${fmtN(c.totalAll)} pcts acumulados</span>
+      </div>
+      <div class="chart-wrap"><canvas id="ce-${sh}"></canvas></div>
+    </div>
+  </div>`;
+
+  // ─ HC ─
+  html+=`<div class="sec">
+    <div class="sec-title">👥 HC Presente
+      <button class="toggle-btn" id="btn-hc-${sh}" onclick="toggle('hc-${sh}')">▲ Recolher</button>
+    </div>
+    <div id="hc-${sh}">
+      <div style="font-size:11px;color:#888;font-style:italic;margin-bottom:10px">📋 Dados válidos para o turno todo — lançados uma vez por dia</div>
+      <div class="hc-grid">
+        <div class="hc-box"><label>HC Necessário</label>
+          <input type="number" value="${s.hcNecessario||''}" placeholder="0" onchange="S['${sh}'].hcNecessario=+this.value;saveState();renderShift('${sh}')"></div>
+        <div class="hc-box"><label>Fixos</label>
+          <input type="number" value="${s.hcFixos||''}" placeholder="0" onchange="S['${sh}'].hcFixos=+this.value;saveState();renderShift('${sh}')"></div>
+        <div class="hc-box"><label>Part Time</label>
+          <input type="number" value="${s.hcPT||''}" placeholder="0" onchange="S['${sh}'].hcPT=+this.value;saveState();renderShift('${sh}')"></div>
+        <div class="hc-box"><label>Temporários</label>
+          <input type="number" value="${s.hcTemp||''}" placeholder="0" onchange="S['${sh}'].hcTemp=+this.value;saveState();renderShift('${sh}')"></div>
+        <div class="hc-box"><label>Diaristas</label>
+          <input type="number" value="${s.hcDiaristas||''}" placeholder="0" onchange="S['${sh}'].hcDiaristas=+this.value;saveState();renderShift('${sh}')"></div>
+        <div class="hc-box"><label>Aus. Justificadas</label>
+          <input type="number" value="${s.hcAusJust||''}" placeholder="0" onchange="S['${sh}'].hcAusJust=+this.value;saveState();renderShift('${sh}')"></div>
+        <div class="hc-box"><label>Aus. Injustificadas</label>
+          <input type="number" value="${s.hcAusInjust||''}" placeholder="0" onchange="S['${sh}'].hcAusInjust=+this.value;saveState();renderShift('${sh}')"></div>
+        <div class="hc-box calc-box"><label>HC Presente Total</label>
+          <input type="number" value="${c.hcTotal}" readonly></div>
+        <div class="hc-box calc-box"><label>Total Ausências</label>
+          <input class="${c.hcAbsent>0?'red-val':'green-val'}" type="number" value="${c.hcAbsent}" readonly></div>
+        <div class="hc-box calc-box"><label>Absenteísmo</label>
+          <input class="${c.pctHC<=3?'green-val':c.pctHC<=6?'':'red-val'}" type="text" value="${fmtPct(c.pctHC)}" readonly title="Base: Fixos + PT + Temp (sem diaristas)"></div>
+      </div>
+    </div>
+  </div>`;
+
+  // ─ ETIQUETAGEM TABLE ─
+  const planHr=c.planPerHr;
+  html+=`<div class="sec">
+    <div class="sec-title">📦 Etiquetagem Hora a Hora — Detalhamento
+      <button class="toggle-btn" id="btn-etiq-${sh}" onclick="toggle('etiq-${sh}')">▲ Recolher</button>
+    </div>
+    <div id="etiq-${sh}" class="tbl-wrap"><table>
+      <thead><tr>
+        <th class="left">Estação</th>
+        ${hrs.map(h=>`<th>${h}</th>`).join('')}
+        <th style="background:#002244">Total</th>
+        <th style="background:#002244">% Plan</th>
+      </tr></thead>
+      <tbody>
+        <tr class="rHead"><td class="left" colspan="${s.numHrs+3}">▸ LINHA / GM</td></tr>
+        ${s.gmData.slice(0,N_GM).map((row,ri)=>{
+          const tot=c.gmStnTot[ri];
+          const p=c.planTotal>0?(tot/c.planTotal)*100:0;
+          return`<tr>
+            <td class="left"><input class="ci left" value="${s.gmNames[ri]}"
+              onchange="S['${sh}'].gmNames[${ri}]=this.value;saveState()"></td>
+            ${hrs.map((h,ci)=>isBreak(h)
+              ?`<td style="background:#fff7e6;color:#bbb;font-style:italic">—</td>`
+              :`<td><input class="ci" type="number" value="${row[ci]||''}" placeholder="0"
+                onchange="S['${sh}'].gmData[${ri}][${ci}]=+this.value;saveState();renderShift('${sh}')"></td>`
+            ).join('')}
+            <td style="font-weight:700;color:var(--blue2)">${fmtN(tot)}</td>
+            <td class="${pctCls(p)}">${tot>0?fmtPct(p):'—'}</td>
+          </tr>`;
+        }).join('')}
+        <tr class="rHead"><td class="left" colspan="${s.numHrs+3}">▸ VOLUMOSO</td></tr>
+        ${s.volData.slice(0,N_VOL).map((row,ri)=>{
+          const tot=c.volStnTot[ri];
+          const p=c.planTotal>0?(tot/c.planTotal)*100:0;
+          return`<tr>
+            <td class="left"><input class="ci left" value="${s.volNames[ri]}"
+              onchange="S['${sh}'].volNames[${ri}]=this.value;saveState()"></td>
+            ${hrs.map((h,ci)=>isBreak(h)
+              ?`<td style="background:#fff7e6;color:#bbb;font-style:italic">—</td>`
+              :`<td><input class="ci" type="number" value="${row[ci]||''}" placeholder="0"
+                onchange="S['${sh}'].volData[${ri}][${ci}]=+this.value;saveState();renderShift('${sh}')"></td>`
+            ).join('')}
+            <td style="font-weight:700;color:var(--blue2)">${fmtN(tot)}</td>
+            <td class="${pctCls(p)}">${tot>0?fmtPct(p):'—'}</td>
+          </tr>`;
+        }).join('')}
+        <tr style="height:2px"><td colspan="${s.numHrs+3}" style="background:var(--blue);padding:0"></td></tr>
+        <tr class="rTot">
+          <td class="left">✔ Total Realizado</td>
+          ${hrs.map((h,i)=>isBreak(h)
+            ?`<td style="font-style:italic;color:#bbb">${h}</td>`
+            :`<td>${fmtN(c.allHrTot[i])}</td>`
+          ).join('')}
+          <td>${fmtN(c.totalAll)}</td>
+          <td class="${pctCls(c.pctTotal)}">${fmtPct(c.pctTotal)}</td>
+        </tr>
+        <tr class="rPlan">
+          <td class="left">📋 Planejado</td>
+          ${hrs.map((h,i)=>isBreak(h)
+            ?`<td style="color:#bbb">—</td>`
+            :`<td>${fmtN(Math.round(planHr))}</td>`
+          ).join('')}
+          <td>${fmtN(c.planTotal)}</td><td>100%</td>
+        </tr>
+        <tr class="rGap">
+          <td class="left">⬆⬇ GAP</td>
+          ${hrs.map((h,i)=>{
+            if(isBreak(h))return`<td style="color:#bbb">—</td>`;
+            const g=c.allHrTot[i]-Math.round(planHr);
+            return`<td class="${gapCls(g)}">${g>=0?'+':''}${fmtN(g)}</td>`;
+          }).join('')}
+          <td class="${gapCls(c.totalAll-c.planTotal)}">${c.totalAll-c.planTotal>=0?'+':''}${fmtN(c.totalAll-c.planTotal)}</td>
+          <td></td>
+        </tr>
+        <tr class="rPct">
+          <td class="left">% Por Hora</td>
+          ${hrs.map((h,i)=>{
+            if(isBreak(h))return`<td style="color:#bbb;font-style:italic">${h}</td>`;
+            const p=c.planTotal>0?(c.allHrTot[i]/c.planTotal)*100:0;
+            return`<td class="${pctCls(p)}">${fmtPct(p)}</td>`;
+          }).join('')}
+          <td class="${pctCls(c.pctTotal)}">${fmtPct(c.pctTotal)}</td><td></td>
+        </tr>
+      </tbody>
+    </table></div>
+  </div>`;
+
+  // ─ SORTING TABLE ─
+  html+=`<div class="sec">
+    <div class="sec-title">🗂 Alocação / Sorting — Detalhamento
+      <button class="toggle-btn" id="btn-sort-${sh}" onclick="toggle('sort-${sh}')">▲ Recolher</button>
+    </div>
+    <div id="sort-${sh}" class="tbl-wrap"><table>
+      <thead><tr>
+        <th>Hora</th><th>No Carrinho</th><th>Meta / Hora</th>
+        <th>%</th><th>GAP</th><th>Acumulado</th><th>Meta Acum.</th>
+      </tr></thead>
+      <tbody>
+        ${(()=>{
+          let cum=0,cumPlan=0,cumIdx=0;
+          return hrs.map((h,i)=>{
+            if(isBreak(h)) return`<tr><td colspan="7" style="background:#fff7e6;font-style:italic;font-weight:600;color:#d46b08;text-align:center">${h.startsWith('JANTAR')?'🍽':'☕'} ${h}</td></tr>`;
+            const pPH=Math.round(c.sortPlanPerHr);
+            const real=num(s.sortData[i]);
+            const pct=pPH>0?(real/pPH)*100:0;
+            const gap=real-pPH;
+            cum+=real; cumPlan+=pPH;
+            const cumPct=cumPlan>0?(cum/cumPlan)*100:0;
+            const cumGap=cum-cumPlan;
+            return`<tr>
+              <td style="font-weight:700;background:#f8f8f8">${h}</td>
+              <td><input class="ci" type="number" value="${s.sortData[i]||''}" placeholder="0"
+                onchange="S['${sh}'].sortData[${i}]=+this.value;saveState();renderShift('${sh}')"></td>
+              <td style="color:#888;background:#fff7e6">${fmtN(pPH)}</td>
+              <td class="${pctCls(pct)}">${real>0?fmtPct(pct):'—'}</td>
+              <td class="${gapCls(gap)}">${real>0?(gap>=0?'+':'')+fmtN(gap):'—'}</td>
+              <td style="font-weight:600;color:var(--blue2)">${fmtN(cum)}</td>
+              <td style="color:#aaa">${fmtN(cumPlan)}</td>
+            </tr>`;
+          }).join('');
+        })()}
+        <tr class="rTot">
+          <td style="font-weight:700">TOTAL</td>
+          <td>${fmtN(sortTotal)}</td>
+          <td>${fmtN(num(s.volRoteir))}</td>
+          <td class="${pctCls(sortPct)}">${fmtPct(sortPct)}</td>
+          <td class="${gapCls(sortTotal-num(s.volRoteir))}">${sortTotal-num(s.volRoteir)>=0?'+':''}${fmtN(sortTotal-num(s.volRoteir))}</td>
+          <td colspan="2"></td>
+        </tr>
+      </tbody>
+    </table></div>
+  </div>`;
+
+  // ─ OCORRÊNCIAS ─
+  html+=`<div class="sec">
+    <div class="sec-title">⚠️ Ocorrências Hora a Hora
+      <button class="toggle-btn" id="btn-oco-${sh}" onclick="toggle('oco-${sh}')">▲ Recolher</button>
+    </div>
+    <div id="oco-${sh}" class="tbl-wrap"><table>
+      <thead><tr>
+        <th style="min-width:130px">Hora</th>
+        <th style="min-width:140px">Tipo</th>
+        <th style="min-width:280px" class="left">Descrição</th>
+        <th style="min-width:220px" class="left">Ação Tomada</th>
+      </tr></thead>
+      <tbody>
+        ${hrs.map((h,i)=>{
+          if(isBreak(h)) return`<tr><td colspan="4" style="background:#fff7e6;font-style:italic;font-weight:600;color:#d46b08;text-align:center">${h.startsWith('JANTAR')?'🍽':'☕'} ${h}</td></tr>`;
+          return`<tr>
+            <td style="font-weight:700;background:#f8f8f8">${h}</td>
+            <td>
+              <select class="oco-sel" onchange="S['${sh}'].ocoTipo[${i}]=this.value;saveState()">
+                <option value=""${s.ocoTipo[i]===''?' selected':''}>— Tipo —</option>
+                ${['🔧 Operacional','⚙️ Equipamento','💻 Sistema','👤 RH/Pessoas','🚛 Line Haul','🛡 Segurança','✅ Qualidade','📌 Outro']
+                  .map(o=>`<option value="${o}"${s.ocoTipo[i]===o?' selected':''}>${o}</option>`).join('')}
+              </select>
+            </td>
+            <td class="left">
+              <textarea class="oco-txt" placeholder="Descreva a ocorrência..."
+                onchange="S['${sh}'].ocoDesc[${i}]=this.value;saveState()">${s.ocoDesc[i]}</textarea>
+            </td>
+            <td class="left">
+              <textarea class="oco-txt" placeholder="Ação tomada..."
+                onchange="S['${sh}'].ocoAcao[${i}]=this.value;saveState()">${s.ocoAcao[i]}</textarea>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table></div>
+  </div>`;
+
+  document.getElementById(`pane-${sh}`).innerHTML=html;
+  // Charts must render after DOM is set
+  requestAnimationFrame(()=>renderCharts(sh));
+}
+
+// ═══════════════════════════════════════════════════════
+//  TAB / CLEAR
+// ═══════════════════════════════════════════════════════
+function switchTab(sh){
+  activeShift=sh;
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',SHIFTS[i]===sh));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById(`pane-${sh}`).classList.add('active');
+  setTimeout(()=>renderCharts(sh),50);
+}
+
+function clearShift(sh){
+  if(!confirm(`Limpar todos os dados do turno ${sh}?`))return;
+  S[sh]=mkShift(sh);saveState();renderShift(sh);showToast(`Turno ${sh} limpo.`);
+}
+
+// ═══════════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════════
+
+// ── FIREBASE MODAL ──
+function openFirebaseModal(){
+  const cfg=JSON.parse(localStorage.getItem('rha-fb-config')||'{}');
+  document.getElementById('fb-apiKey').value=cfg.apiKey||'';
+  document.getElementById('fb-projectId').value=cfg.projectId||'';
+  document.getElementById('fb-databaseURL').value=cfg.databaseURL||'';
+  document.getElementById('fb-appId').value=cfg.appId||'';
+  document.getElementById('firebase-modal').classList.add('open');
+}
+function closeFirebaseModal(){document.getElementById('firebase-modal').classList.remove('open');}
+async function applyFirebaseConfig(){
+  const cfg={
+    apiKey:document.getElementById('fb-apiKey').value.trim(),
+    authDomain:document.getElementById('fb-projectId').value.trim()+'.firebaseapp.com',
+    databaseURL:document.getElementById('fb-databaseURL').value.trim(),
+    projectId:document.getElementById('fb-projectId').value.trim(),
+    storageBucket:document.getElementById('fb-projectId').value.trim()+'.appspot.com',
+    messagingSenderId:'',appId:document.getElementById('fb-appId').value.trim()
+  };
+  if(!cfg.databaseURL){document.getElementById('fb-test-result').textContent='⚠️ databaseURL é obrigatório';return;}
+  localStorage.setItem('rha-fb-config',JSON.stringify(cfg));
+  Object.assign(FIREBASE_CONFIG,cfg);_db=null;
+  const res=document.getElementById('fb-test-result');
+  res.textContent='⏳ Testando...';res.style.color='#888';
+  try{
+    if(isFirebaseReady()){
+      await _db.ref('.info/connected').get();
+      res.textContent='✅ Conectado!';res.style.color='#389e0d';
+      setOnlineStatus(true);
+      await _db.ref('rha-v3').set(S);
+      startRealtimeSync();
+      setTimeout(closeFirebaseModal,1500);
+    }
+  }catch(e){res.textContent='❌ '+e.message;res.style.color='#cf1322';setOnlineStatus(false);}
+}
+(()=>{const cfg=JSON.parse(localStorage.getItem('rha-fb-config')||'{}');if(cfg.databaseURL)Object.assign(FIREBASE_CONFIG,cfg);})();
+
+// ── SHARE MODAL ──
+function getMobileUrl(){const base=window.location.href.replace(/[^/]*$/,'');return base+'formulario-lancamento.html';}
+function getDashUrl(){return window.location.href.split('?')[0].split('#')[0];}
+function openShareModal(){
+  const dashUrl=getDashUrl(),mobileUrl=getMobileUrl();
+  const qr='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=';
+  document.getElementById('qr-dashboard').src=qr+encodeURIComponent(dashUrl);
+  document.getElementById('qr-mobile').src=qr+encodeURIComponent(mobileUrl);
+  document.getElementById('url-dashboard').textContent=dashUrl;
+  document.getElementById('url-mobile').textContent=mobileUrl;
+  document.getElementById('share-modal').classList.add('open');
+}
+function closeShareModal(){document.getElementById('share-modal').classList.remove('open');}
+function shareWpp(){
+  const url=getMobileUrl();
+  const msg=encodeURIComponent('📦 SMG1 Contagem — Lançamento Hora a Hora\nAcesse pelo celular: '+url);
+  window.open('https://wa.me/?text='+msg,'_blank');
+}
+function copyMobileUrl(){navigator.clipboard.writeText(getMobileUrl()).then(()=>showToast('Link copiado!'));}
+
+
+
+(async()=>{ await initState(); SHIFTS.forEach(sh=>renderShift(sh)); startRealtimeSync(); })();
+</script>
+
+
+<!-- MODAL FIREBASE CONFIG -->
+<div class="modal-overlay" id="firebase-modal" onclick="if(event.target===this)closeFirebaseModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeFirebaseModal()">✕</button>
+    <h2>🔥 Configurar Firebase — Sync Online</h2>
+    <div style="font-size:12px;color:#555;line-height:1.8;margin-bottom:14px;background:#f8f9ff;padding:12px;border-radius:8px;border:1px solid #e0e8ff">
+      <strong>Como configurar (5 minutos, grátis):</strong><br>
+      1. Acesse <a href="https://console.firebase.google.com" target="_blank" style="color:#0050b3;font-weight:700">console.firebase.google.com</a><br>
+      2. Clique <strong>+ Criar projeto</strong> → dê um nome (ex: smg1-contagem)<br>
+      3. Vá em <strong>Realtime Database → Criar banco de dados</strong> → modo teste<br>
+      4. No menu lateral: <strong>Configurações ⚙️ → Seus apps → Web (&lt;/&gt;)</strong><br>
+      5. Copie os valores e cole abaixo:
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div><label style="font-size:10px;font-weight:800;color:#888;text-transform:uppercase">apiKey</label>
+        <input id="fb-apiKey" type="text" placeholder="AIza..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:12px"></div>
+      <div><label style="font-size:10px;font-weight:800;color:#888;text-transform:uppercase">projectId</label>
+        <input id="fb-projectId" type="text" placeholder="smg1-contagem" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:12px"></div>
+      <div><label style="font-size:10px;font-weight:800;color:#888;text-transform:uppercase">databaseURL ⚠️</label>
+        <input id="fb-databaseURL" type="text" placeholder="https://smg1-rtdb.firebaseio.com" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:12px"></div>
+      <div><label style="font-size:10px;font-weight:800;color:#888;text-transform:uppercase">appId</label>
+        <input id="fb-appId" type="text" placeholder="1:xxx:web:xxx" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:12px"></div>
+    </div>
+    <button onclick="applyFirebaseConfig()" style="width:100%;padding:13px;background:#f5c800;color:#1a1a1a;border:none;border-radius:10px;font-size:15px;font-weight:900;cursor:pointer;margin-bottom:8px">🔌 Conectar e Sincronizar</button>
+    <div id="fb-test-result" style="font-size:12px;text-align:center;color:#888;min-height:20px"></div>
+    <div style="margin-top:12px;padding:10px;background:#fffbe6;border-radius:8px;font-size:11px;color:#7a5800">
+      💡 A configuração fica salva neste navegador. Repita em cada computador/celular do time, usando os mesmos dados do Firebase.
+    </div>
+  </div>
+</div>
+
+<!-- MODAL COMPARTILHAR -->
+<div class="modal-overlay" id="share-modal" onclick="if(event.target===this)closeShareModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeShareModal()">✕</button>
+    <h2>📤 Compartilhar Sistema</h2>
+    <div class="share-cards">
+      <div class="share-card">
+        <div class="sc-title">📊 Dashboard</div>
+        <img id="qr-dashboard" src="" alt="QR Code">
+        <div class="sc-url" id="url-dashboard">—</div>
+      </div>
+      <div class="share-card">
+        <div class="sc-title">📱 Formulário Mobile</div>
+        <img id="qr-mobile" src="" alt="QR Code">
+        <div class="sc-url" id="url-mobile">—</div>
+      </div>
+    </div>
+    <div class="share-btns">
+      <button class="btn-wpp" onclick="shareWpp()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+        Enviar link do formulário pelo WhatsApp
+      </button>
+      <button class="btn-copy" onclick="copyMobileUrl()">📋 Copiar link do formulário mobile</button>
+    </div>
+    <div class="netlify-tip">
+      <strong>🚀 Como compartilhar pela internet (grátis):</strong>
+      1. Salve os 3 arquivos HTML em uma pasta<br>
+      2. Acesse <a href="https://app.netlify.com/drop" target="_blank">netlify.com/drop</a><br>
+      3. Arraste a pasta para o site → link gerado em segundos!<br>
+      4. Todos os operadores acessam pelo mesmo link
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
