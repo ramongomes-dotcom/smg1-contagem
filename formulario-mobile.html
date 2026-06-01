@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>SMG1 — Lançamento</title>
+<style>
+:root{
+  --blk:#1a1a1a;--yel:#f5c800;--grn:#52c41a;--red:#ff4d4f;
+  --bg:#f4f6fb;--card:#fff;--border:#e8eaed;--txt:#111;--sub:#888;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);font-family:'Segoe UI',system-ui,sans-serif;color:var(--txt);overscroll-behavior:none;}
+
+/* ─ HEADER ─ */
+.hdr{background:var(--blk);color:#fff;padding:0 16px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.hdr-badge{background:var(--yel);color:var(--blk);font-weight:900;font-size:11px;padding:4px 8px;border-radius:5px;white-space:nowrap;}
+.hdr-info{text-align:right;line-height:1.35;}
+.hdr-turno{font-size:13px;font-weight:800;color:var(--yel);}
+.hdr-hora{font-size:11px;opacity:.65;}
+
+/* ─ PROGRESS ─ */
+.prog{height:4px;background:#333;position:sticky;top:56px;z-index:99;}
+.prog-fill{height:100%;background:var(--yel);transition:width .3s;}
+
+/* ─ MAIN ─ */
+.main{padding:16px 14px 90px;max-width:480px;margin:0 auto;}
+
+/* ─ STEP INDICATOR ─ */
+.steps{display:flex;gap:5px;margin-bottom:18px;}
+.step-dot{flex:1;height:6px;border-radius:3px;background:#ddd;transition:background .2s;}
+.step-dot.done{background:var(--grn);}
+.step-dot.active{background:var(--yel);}
+
+/* ─ CARD ─ */
+.card{background:var(--card);border-radius:14px;padding:18px 16px;margin-bottom:14px;box-shadow:0 2px 10px rgba(0,0,0,.07);}
+.card-title{font-size:15px;font-weight:900;color:var(--blk);display:flex;align-items:center;gap:8px;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid var(--yel);}
+.card-title .icon{font-size:20px;}
+
+/* ─ TURNO BUTTONS ─ */
+.shift-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px;}
+.shift-tile{padding:22px 12px;border:3px solid var(--border);border-radius:14px;background:#fff;font-size:26px;font-weight:900;color:#ccc;text-align:center;cursor:pointer;transition:all .2s;user-select:none;}
+.shift-tile.active{background:var(--blk);color:var(--yel);border-color:var(--blk);transform:scale(1.02);}
+.shift-tile .sub{font-size:11px;font-weight:600;margin-top:4px;opacity:.6;}
+
+/* ─ BREAK SELECTOR ─ */
+.brk-field{margin-top:14px;display:none;}
+.brk-field label{display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--sub);margin-bottom:8px;}
+.brk-field select{width:100%;padding:13px 14px;border:2px solid var(--border);border-radius:10px;font-size:16px;font-family:inherit;background:#fff;-webkit-appearance:none;appearance:none;}
+
+/* ─ HOUR GRID ─ */
+.hour-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.hour-tile{padding:16px 8px;border:2px solid var(--border);border-radius:12px;background:#fff;font-size:13px;font-weight:700;color:#888;text-align:center;cursor:pointer;transition:all .15s;position:relative;user-select:none;}
+.hour-tile.active{background:var(--blk);color:var(--yel);border-color:var(--blk);}
+.hour-tile.done{border-color:var(--grn);color:var(--grn);}
+.hour-tile.done.active{background:var(--grn);color:#fff;border-color:var(--grn);}
+.hour-tile.brk{background:#fff8e6;color:#d46b08;border-color:#ffd591;cursor:default;font-size:12px;}
+.hour-tile .dot{position:absolute;top:6px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--grn);}
+
+/* ─ SEÇÃO LABEL ─ */
+.sec-lbl{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.8px;color:#7a5800;background:#fffbe6;padding:5px 10px;border-radius:6px;margin:16px 0 10px;display:block;}
+
+/* ─ STATION INPUT ─ */
+.stn-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0f0f0;}
+.stn-row:last-child{border-bottom:none;}
+.stn-name-wrap{flex:1;}
+.stn-name-lbl{font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;}
+.stn-name-txt{font-size:13px;font-weight:700;color:#444;border:none;background:transparent;width:100%;padding:0;font-family:inherit;}
+.stn-name-txt:focus{outline:none;color:var(--blk);}
+.stn-num{width:90px;padding:12px 6px;border:2px solid var(--border);border-radius:10px;font-size:22px;font-weight:900;text-align:center;color:var(--blk);font-family:inherit;-webkit-appearance:none;appearance:none;}
+.stn-num:focus{outline:none;border-color:var(--yel);box-shadow:0 0 0 3px rgba(245,200,0,.25);}
+.stn-num.has-val{border-color:var(--grn);background:#f6ffed;}
+
+/* ─ HC GRID ─ */
+.hc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.hc-item label{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--sub);margin-bottom:6px;}
+.hc-item input{width:100%;padding:13px 8px;border:2px solid var(--border);border-radius:10px;font-size:20px;font-weight:800;text-align:center;color:var(--blk);font-family:inherit;-webkit-appearance:none;appearance:none;}
+.hc-item input:focus{outline:none;border-color:var(--yel);}
+.hc-item.calc input{background:#fffbe6;border-color:#ffe066;color:#7a5800;font-size:18px;}
+.hc-total-display{background:#1a1a1a;border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+.hc-total-display .lbl{font-size:11px;font-weight:800;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.4px;}
+.hc-total-display .val{font-size:28px;font-weight:900;color:var(--yel);}
+.hc-total-display .abs{text-align:right;}
+.hc-total-display .abs .val{font-size:22px;color:#ff7875;}
+
+/* ─ OCO ─ */
+.oco-select{width:100%;padding:14px;border:2px solid var(--border);border-radius:10px;font-size:16px;font-family:inherit;background:#fff;-webkit-appearance:none;appearance:none;margin-bottom:12px;}
+.oco-select:focus{outline:none;border-color:var(--yel);}
+.oco-area{width:100%;padding:14px;border:2px solid var(--border);border-radius:10px;font-size:15px;font-family:inherit;resize:none;min-height:70px;margin-bottom:12px;}
+.oco-area:focus{outline:none;border-color:var(--yel);}
+
+/* ─ SUMMARY ─ */
+.sum-row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:10px;background:#f8f9ff;border:1px solid #e0e8ff;margin-bottom:8px;}
+.sum-lbl{font-size:13px;font-weight:700;color:#555;}
+.sum-val{font-size:20px;font-weight:900;color:var(--blk);}
+.sum-val.zero{color:#ccc;}
+
+/* ─ INFO BOX ─ */
+.info-box{background:#fff8e6;border:1px solid #ffd591;border-radius:10px;padding:12px 14px;font-size:12px;color:#7a5800;margin-bottom:14px;line-height:1.6;}
+
+/* ─ NAV ─ */
+.nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid var(--border);padding:12px 16px;display:flex;gap:10px;z-index:100;max-width:480px;margin:0 auto;left:50%;transform:translateX(-50%);}
+@media(max-width:480px){.nav{left:0;transform:none;right:0;}}
+.btn{flex:1;padding:17px 8px;border:none;border-radius:12px;font-size:16px;font-weight:900;cursor:pointer;transition:all .15s;font-family:inherit;letter-spacing:.2px;}
+.btn:active{transform:scale(.96);}
+.btn-back{background:#f0f0f0;color:#666;}
+.btn-next{background:var(--blk);color:var(--yel);}
+.btn-save{background:var(--grn);color:#fff;font-size:17px;}
+
+/* ─ TOAST ─ */
+#toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--blk);color:var(--yel);padding:12px 24px;border-radius:10px;font-size:14px;font-weight:800;box-shadow:0 4px 16px rgba(0,0,0,.3);display:none;z-index:999;white-space:nowrap;}
+
+/* ─ WATERMARK ─ */
+body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:320px;height:320px;background-image:url('smg1-logo.png');background-size:contain;background-repeat:no-repeat;background-position:center;opacity:0.05;pointer-events:none;z-index:0;}
+.main,.hdr,.prog{position:relative;z-index:1;}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div class="hdr">
+  <a href="report-hora-a-hora.html" style="text-decoration:none">
+    <div class="hdr-badge" style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:14px">📊</span> SMG1
+    </div>
+  </a>
+  <div class="hdr-info">
+    <div class="hdr-turno" id="hdr-turno">— Selecione o turno</div>
+    <div class="hdr-hora" id="hdr-hora">Lançamento Hora a Hora &nbsp;<span id="fb-dot" title="Status">⚫</span></div>
+  </div>
+</div>
+<div class="prog"><div class="prog-fill" id="prog-fill" style="width:16%"></div></div>
+
+<div class="main">
+
+  <!-- STEP DOTS -->
+  <div class="steps" id="step-dots"></div>
+
+  <!-- ══ STEP 1: TURNO + HORA ══ -->
+  <div id="step-1">
+    <div class="card">
+      <div class="card-title"><span class="icon">🗓</span>Turno</div>
+      <div class="shift-grid" id="shift-grid"></div>
+      <div class="brk-field" id="brk-field">
+        <label id="brk-label">☕ Horário do Almoço</label>
+        <select id="brk-select" onchange="setBrkSlot(this.value)"></select>
+      </div>
+    </div>
+    <div class="card" id="hour-card" style="display:none">
+      <div class="card-title"><span class="icon">🕐</span>Hora do lançamento</div>
+      <div class="hour-grid" id="hour-grid"></div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 2: ETIQUETAGEM ══ -->
+  <div id="step-2" style="display:none">
+    <div class="card">
+      <div class="card-title"><span class="icon">📦</span>Etiquetagem</div>
+      <span class="sec-lbl">▸ LINHA / GM</span>
+      <div id="gm-inputs"></div>
+      <span class="sec-lbl">▸ VOLUMOSO</span>
+      <div id="vol-inputs"></div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 3: SORTING ══ -->
+  <div id="step-3" style="display:none">
+    <div class="card">
+      <div class="card-title"><span class="icon">🗂</span>Sorting — No Carrinho</div>
+      <div style="padding:10px 0">
+        <div class="stn-name-lbl">Qtd. no carrinho nesta hora</div>
+        <input type="number" id="f-sort" inputmode="numeric" placeholder="0" class="stn-num" style="width:100%;margin-top:8px;font-size:28px;padding:16px;">
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 4: HC ══ -->
+  <div id="step-4" style="display:none">
+    <div class="info-box">📋 Estes dados valem para o turno todo. Preencha uma vez por dia.</div>
+    <div class="card">
+      <div class="card-title"><span class="icon">👥</span>HC — Composição</div>
+      <div class="hc-grid">
+        <div class="hc-item"><label>Fixos</label><input type="number" id="hc-fixos" inputmode="numeric" placeholder="0"></div>
+        <div class="hc-item"><label>Part Time</label><input type="number" id="hc-pt" inputmode="numeric" placeholder="0"></div>
+        <div class="hc-item"><label>Temporários</label><input type="number" id="hc-temp" inputmode="numeric" placeholder="0"></div>
+        <div class="hc-item"><label>Diaristas</label><input type="number" id="hc-diar" inputmode="numeric" placeholder="0"></div>
+        <div class="hc-item"><label>Aus. Justif.</label><input type="number" id="hc-ausj" inputmode="numeric" placeholder="0" oninput="recalcHC()"></div>
+        <div class="hc-item"><label>Aus. Injustif.</label><input type="number" id="hc-ausi" inputmode="numeric" placeholder="0" oninput="recalcHC()"></div>
+        <div class="hc-item"><label>HC Necessário</label><input type="number" id="hc-nec" inputmode="numeric" placeholder="0"></div>
+      </div>
+      <div class="hc-total-display">
+        <div>
+          <div class="lbl">HC Presente Total</div>
+          <div class="val" id="hc-total-val">—</div>
+        </div>
+        <div class="abs">
+          <div class="lbl">Ausências</div>
+          <div class="val abs" id="hc-aus-val">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 5: OCORRÊNCIAS ══ -->
+  <div id="step-5" style="display:none">
+    <div class="card">
+      <div class="card-title"><span class="icon">⚠️</span>Ocorrências</div>
+      <select id="f-oco-tipo" class="oco-select">
+        <option value="">Sem ocorrência nesta hora</option>
+        <option>🔧 Operacional</option><option>⚙️ Equipamento</option>
+        <option>💻 Sistema</option><option>👤 RH/Pessoas</option>
+        <option>🚛 Line Haul</option><option>🛡 Segurança</option>
+        <option>✅ Qualidade</option><option>📌 Outro</option>
+      </select>
+      <textarea id="f-oco-desc" class="oco-area" placeholder="Descrição da ocorrência..."></textarea>
+      <textarea id="f-oco-acao" class="oco-area" placeholder="Ação tomada..."></textarea>
+    </div>
+  </div>
+
+  <!-- ══ STEP 6: RESUMO ══ -->
+  <div id="step-6" style="display:none">
+    <div class="card">
+      <div class="card-title"><span class="icon">✅</span>Resumo</div>
+      <div id="summary-content"></div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- NAV BUTTONS -->
+<div class="nav">
+  <button class="btn btn-back" id="btn-back" onclick="goBack()">← Voltar</button>
+  <button class="btn btn-next" id="btn-next" onclick="goNext()">Avançar →</button>
+</div>
+
+<script>
+// ═══════════════════════════
+//  CONSTANTS & STATE
+// ═══════════════════════════
+const SHIFTS=['AM','PM','SD','CHP'];
+const N_GM=5,N_VOL=4,N_HRS=7;
+const DEFS={
+  AM:{start:'01:00',hrs:6,brk:3},
+  PM:{start:'09:00',hrs:4,brk:2},
+  SD:{start:'04:00',hrs:1,brk:-1},
+  CHP:{start:'17:30',hrs:5,brk:2},
+};
+const FIXED_HOURS_BASE={
+  AM:['01:00-02:00','02:00-03:00','03:00-04:00','04:00-05:00','05:00-06:00','06:00-07:00'],
+  SD:['04:00-05:00'],
+  CHP:['17:30-18:30','18:30-19:30','19:00-20:00','20:00-21:00','21:00-21:30'],
+};
+const BREAK_LABEL={AM:'ALMOÇO',PM:'ALMOÇO',CHP:'JANTAR'};
+const SHIFT_TIMES={AM:'01:00–07:00',PM:'09:00–13:00',SD:'04:00–05:00',CHP:'17:30–21:30'};
+const N_STEPS=6;
+const num=v=>{const n=parseFloat(String(v||0).replace(/,/g,'.'));return isNaN(n)?0:n;};
+const isBreak=h=>h==='ALMOÇO'||h.startsWith('ALMOÇO')||h.startsWith('JANTAR');
+
+let S={},curStep=1,curShift=null,curHrIdx=null;
+
+async function loadState(){
+  try{S=JSON.parse(localStorage.getItem('rha-v3')||'{}');}catch(e){}
+  SHIFTS.forEach(sh=>{if(!S[sh])S[sh]=mkShift(sh);});
+  if(isFirebaseReady()){
+    try{
+      const snap=await _db.ref('rha-v3').get();
+      if(snap.exists()){S=snap.val();SHIFTS.forEach(sh=>{if(!S[sh])S[sh]=mkShift(sh);});localStorage.setItem('rha-v3',JSON.stringify(S));}
+      setFbStatus(true);
+    }catch(e){setFbStatus(false);}
+  }
+}
+function mkShift(sh){
+  const d=DEFS[sh];
+  return{startLine:d.start,startVol:d.start,endLine:'',numHrs:d.hrs,brkSlot:d.brk,
+    volPlan:0,volRoteir:0,hcNecessario:0,hcFixos:0,hcPT:0,hcTemp:0,hcDiaristas:0,hcAusJust:0,hcAusInjust:0,
+    gmNames:Array.from({length:N_GM},(_,i)=>`Estação ${i+1} Linha`),
+    volNames:Array.from({length:N_VOL},(_,i)=>`Estação ${i+1} Volumoso`),
+    gmData:Array.from({length:N_GM},()=>Array(N_HRS).fill('')),
+    volData:Array.from({length:N_VOL},()=>Array(N_HRS).fill('')),
+    sortData:Array(N_HRS).fill(''),
+    ocoTipo:Array(N_HRS).fill(''),ocoDesc:Array(N_HRS).fill(''),ocoAcao:Array(N_HRS).fill(''),
+  };
+}
+function saveState(){
+  localStorage.setItem('rha-v3',JSON.stringify(S));
+  if(isFirebaseReady()){
+    _db.ref('rha-v3').set(S).then(()=>setFbStatus(true)).catch(()=>setFbStatus(false));
+  }
+}
+function toast(msg,color){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.background=color||'#1a1a1a';t.style.display='block';
+  setTimeout(()=>t.style.display='none',2200);
+}
+
+function getHours(sh){
+  if(FIXED_HOURS_BASE[sh]){
+    return FIXED_HOURS_BASE[sh].map((t,i)=>{
+      if(i===S[sh].brkSlot&&BREAK_LABEL[sh])return BREAK_LABEL[sh]+' ('+t+')';
+      return t;
+    });
+  }
+  const s=S[sh];const[h,m]=s.startLine.split(':').map(Number);
+  return Array.from({length:s.numHrs},(_,i)=>{
+    if(i===s.brkSlot)return BREAK_LABEL[sh]||'ALMOÇO';
+    const s2=(h+i)%24,e=(h+i+1)%24,p=x=>String(x).padStart(2,'0');
+    return`${p(s2)}:${p(m)}-${p(e)}:${p(m)}`;
+  });
+}
+function hasData(sh,i){
+  const s=S[sh];
+  return s.gmData.some(r=>num(r[i])>0)||s.volData.some(r=>num(r[i])>0)||num(s.sortData[i])>0;
+}
+
+// ═══════════════════════════
+//  STEP DOTS & PROGRESS
+// ═══════════════════════════
+function updateUI(){
+  // dots
+  document.getElementById('step-dots').innerHTML=
+    Array.from({length:N_STEPS},(_,i)=>{
+      const cls=i+1<curStep?'done':i+1===curStep?'active':'';
+      return`<div class="step-dot ${cls}"></div>`;
+    }).join('');
+  // progress bar
+  document.getElementById('prog-fill').style.width=(curStep/N_STEPS*100)+'%';
+  // back btn
+  document.getElementById('btn-back').style.display=curStep===1?'none':'block';
+  // next/save btn
+  const nb=document.getElementById('btn-next');
+  if(curStep===N_STEPS){nb.textContent='💾 Salvar';nb.className='btn btn-save';}
+  else{nb.textContent='Avançar →';nb.className='btn btn-next';}
+  // show/hide steps
+  for(let i=1;i<=N_STEPS;i++)document.getElementById('step-'+i).style.display=i===curStep?'block':'none';
+  // hdr
+  if(curShift){
+    document.getElementById('hdr-turno').textContent='Turno '+curShift+(curHrIdx!==null?' · '+getHours(curShift)[curHrIdx]:'');
+    document.getElementById('hdr-hora').textContent=SHIFT_TIMES[curShift]||'';
+  }
+  // build step content
+  if(curStep===1)buildStep1();
+  else if(curStep===2)buildStep2();
+  else if(curStep===3)buildStep3();
+  else if(curStep===4)buildStep4();
+  else if(curStep===5)buildStep5();
+  else if(curStep===6)buildStep6();
+}
+
+// ═══════════════════════════
+//  STEP 1
+// ═══════════════════════════
+function buildStep1(){
+  // shift tiles
+  document.getElementById('shift-grid').innerHTML=SHIFTS.map(sh=>`
+    <div class="shift-tile ${curShift===sh?'active':''}" onclick="selectShift('${sh}')">
+      ${sh}<div class="sub">${SHIFT_TIMES[sh]}</div>
+    </div>`).join('');
+  // hour card
+  if(curShift){
+    document.getElementById('hour-card').style.display='block';
+    buildHourGrid();
+  } else {
+    document.getElementById('hour-card').style.display='none';
+  }
+}
+
+function selectShift(sh){
+  curShift=sh;curHrIdx=null;
+  // break selector
+  const base=FIXED_HOURS_BASE[sh]||(BREAK_LABEL[sh]?(()=>{
+    const s2=S[sh];const[hh,mm]=s2.startLine.split(':').map(Number);
+    return Array.from({length:s2.numHrs},(_,i)=>{
+      const s3=(hh+i)%24,e=(hh+i+1)%24,p=x=>String(x).padStart(2,'0');
+      return`${p(s3)}:${p(mm)}-${p(e)}:${p(mm)}`;
+    });
+  })():null);
+  const brkField=document.getElementById('brk-field');
+  if(base&&BREAK_LABEL[sh]){
+    const lbl=BREAK_LABEL[sh];
+    document.getElementById('brk-label').textContent=(lbl==='JANTAR'?'🍽':'☕')+' Horário do '+lbl;
+    document.getElementById('brk-select').innerHTML=
+      '<option value="-1">Sem intervalo</option>'+
+      base.map((t,i)=>`<option value="${i}"${S[sh].brkSlot==i?' selected':''}>${t}</option>`).join('');
+    brkField.style.display='block';
+  } else {
+    brkField.style.display='none';
+  }
+  document.getElementById('hour-card').style.display='block';
+  buildHourGrid();
+  updateUI();
+}
+
+function setBrkSlot(val){
+  if(!curShift)return;
+  S[curShift].brkSlot=+val;saveState();buildHourGrid();
+}
+
+function buildHourGrid(){
+  const hrs=getHours(curShift);
+  document.getElementById('hour-grid').innerHTML=hrs.map((h,i)=>{
+    if(isBreak(h))return`<div class="hour-tile brk">${h.startsWith('JANTAR')?'🍽':'☕'} ${h}</div>`;
+    const done=hasData(curShift,i);
+    const active=curHrIdx===i;
+    return`<div class="hour-tile ${done?'done':''} ${active?'active':''}" onclick="selectHour(${i},'${h}')">
+      ${h}${done?'<span class="dot"></span>':''}
+    </div>`;
+  }).join('');
+}
+
+function selectHour(idx,label){
+  curHrIdx=idx;
+  buildHourGrid();
+  document.getElementById('hdr-turno').textContent='Turno '+curShift+' · '+label;
+}
+
+// ═══════════════════════════
+//  STEP 2
+// ═══════════════════════════
+function buildStep2(){
+  if(!curShift)return;
+  const s=S[curShift];
+  const makeRows=(names,data,prefix)=>names.map((name,ri)=>`
+    <div class="stn-row">
+      <div class="stn-name-wrap">
+        <div class="stn-name-lbl">${prefix} ${ri+1}</div>
+        <input class="stn-name-txt" value="${name}" placeholder="Nome da estação"
+          onchange="S['${curShift}'].${data}Names[${ri}]=this.value;saveState()">
+      </div>
+      <input type="number" inputmode="numeric" class="stn-num ${num(s[data+'Data'][ri][curHrIdx])>0?'has-val':''}"
+        value="${s[data+'Data'][ri][curHrIdx]||''}" placeholder="0"
+        onchange="S['${curShift}'].${data}Data[${ri}][${curHrIdx}]=+this.value;saveState();this.classList.toggle('has-val',+this.value>0)">
+    </div>`).join('');
+  document.getElementById('gm-inputs').innerHTML=makeRows(s.gmNames,'gm','Linha');
+  document.getElementById('vol-inputs').innerHTML=makeRows(s.volNames,'vol','Volumoso');
+}
+
+// ═══════════════════════════
+//  STEP 3
+// ═══════════════════════════
+function buildStep3(){
+  if(!curShift||curHrIdx===null)return;
+  document.getElementById('f-sort').value=S[curShift].sortData[curHrIdx]||'';
+}
+
+// ═══════════════════════════
+//  STEP 4: HC
+// ═══════════════════════════
+function buildStep4(){
+  if(!curShift)return;
+  const s=S[curShift];
+  document.getElementById('hc-fixos').value=s.hcFixos||'';
+  document.getElementById('hc-pt').value=s.hcPT||'';
+  document.getElementById('hc-temp').value=s.hcTemp||'';
+  document.getElementById('hc-diar').value=s.hcDiaristas||'';
+  document.getElementById('hc-ausj').value=s.hcAusJust||'';
+  document.getElementById('hc-ausi').value=s.hcAusInjust||'';
+  document.getElementById('hc-nec').value=s.hcNecessario||'';
+  // live calc for all
+  ['hc-fixos','hc-pt','hc-temp','hc-diar','hc-ausj','hc-ausi'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&!el._bound){el.addEventListener('input',recalcHC);el._bound=true;}
+  });
+  recalcHC();
+}
+function recalcHC(){
+  const f=num(document.getElementById('hc-fixos').value);
+  const pt=num(document.getElementById('hc-pt').value);
+  const tm=num(document.getElementById('hc-temp').value);
+  const di=num(document.getElementById('hc-diar').value);
+  const aj=num(document.getElementById('hc-ausj').value);
+  const ai=num(document.getElementById('hc-ausi').value);
+  const tot=Math.max(0,f+pt+tm+di-aj-ai);
+  const aus=aj+ai;
+  document.getElementById('hc-total-val').textContent=tot||'—';
+  document.getElementById('hc-aus-val').textContent=aus||'—';
+  document.getElementById('hc-aus-val').style.color=aus>0?'#ff7875':'#52c41a';
+}
+
+// ═══════════════════════════
+//  STEP 5: OCORRÊNCIAS
+// ═══════════════════════════
+function buildStep5(){
+  if(!curShift||curHrIdx===null)return;
+  const s=S[curShift];
+  document.getElementById('f-oco-tipo').value=s.ocoTipo[curHrIdx]||'';
+  document.getElementById('f-oco-desc').value=s.ocoDesc[curHrIdx]||'';
+  document.getElementById('f-oco-acao').value=s.ocoAcao[curHrIdx]||'';
+}
+
+// ═══════════════════════════
+//  STEP 6: SUMMARY
+// ═══════════════════════════
+function buildStep6(){
+  if(!curShift||curHrIdx===null)return;
+  const s=S[curShift];
+  const hrLabel=getHours(curShift)[curHrIdx];
+  const gmTot=s.gmData.reduce((a,r)=>a+num(r[curHrIdx]),0);
+  const volTot=s.volData.reduce((a,r)=>a+num(r[curHrIdx]),0);
+  const sortVal=num(s.sortData[curHrIdx]);
+  const hcTot=Math.max(0,num(s.hcFixos)+num(s.hcPT)+num(s.hcTemp)+num(s.hcDiaristas)-num(s.hcAusJust)-num(s.hcAusInjust));
+  const oco=s.ocoTipo[curHrIdx]||'—';
+  const row=(lbl,val,unit='')=>`<div class="sum-row"><span class="sum-lbl">${lbl}</span><span class="sum-val ${val===0?'zero':''}">${val===0?'—':val.toLocaleString('pt-BR')+(unit?' '+unit:'')}</span></div>`;
+  document.getElementById('summary-content').innerHTML=`
+    <div style="background:#1a1a1a;border-radius:10px;padding:14px;text-align:center;margin-bottom:16px">
+      <div style="font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;font-weight:800">Turno · Hora</div>
+      <div style="font-size:22px;font-weight:900;color:#f5c800;margin-top:4px">${curShift} · ${hrLabel}</div>
+    </div>
+    ${row('GM Linha',gmTot,'pcts')}
+    ${row('Volumoso',volTot,'pcts')}
+    ${row('Etiquetagem Total',gmTot+volTot,'pcts')}
+    ${row('Sorting (No Carrinho)',sortVal,'pcts')}
+    ${row('HC Presente Total',hcTot)}
+    <div class="sum-row"><span class="sum-lbl">Ocorrência</span><span class="sum-val" style="font-size:14px">${oco}</span></div>
+    <div style="margin-top:14px;padding:14px;background:#f6ffed;border-radius:10px;border:1px solid #b7eb8f;text-align:center">
+      <div style="font-size:14px;font-weight:900;color:#389e0d">✅ Pronto para salvar!</div>
+    </div>`;
+}
+
+// ═══════════════════════════
+//  SAVE STEPS
+// ═══════════════════════════
+function saveStep2(){
+  if(!curShift||curHrIdx===null)return;
+  const s=S[curShift];
+  document.querySelectorAll('#gm-inputs .stn-num').forEach((el,ri)=>{s.gmData[ri][curHrIdx]=num(el.value)||'';});
+  document.querySelectorAll('#vol-inputs .stn-num').forEach((el,ri)=>{s.volData[ri][curHrIdx]=num(el.value)||'';});
+}
+function saveStep3(){
+  if(!curShift||curHrIdx===null)return;
+  S[curShift].sortData[curHrIdx]=num(document.getElementById('f-sort').value)||'';
+}
+function saveStep4(){
+  if(!curShift)return;
+  const s=S[curShift];
+  s.hcFixos=num(document.getElementById('hc-fixos').value)||s.hcFixos;
+  s.hcPT=num(document.getElementById('hc-pt').value)||s.hcPT;
+  s.hcTemp=num(document.getElementById('hc-temp').value)||s.hcTemp;
+  s.hcDiaristas=num(document.getElementById('hc-diar').value)||s.hcDiaristas;
+  s.hcAusJust=num(document.getElementById('hc-ausj').value)||0;
+  s.hcAusInjust=num(document.getElementById('hc-ausi').value)||0;
+  s.hcNecessario=num(document.getElementById('hc-nec').value)||s.hcNecessario;
+}
+function saveStep5(){
+  if(!curShift||curHrIdx===null)return;
+  const s=S[curShift];
+  s.ocoTipo[curHrIdx]=document.getElementById('f-oco-tipo').value;
+  s.ocoDesc[curHrIdx]=document.getElementById('f-oco-desc').value;
+  s.ocoAcao[curHrIdx]=document.getElementById('f-oco-acao').value;
+}
+
+// ═══════════════════════════
+//  NAVIGATION
+// ═══════════════════════════
+function validate(){
+  if(curStep===1){
+    if(!curShift){toast('Selecione o turno','#cf1322');return false;}
+    if(curHrIdx===null){toast('Selecione a hora','#cf1322');return false;}
+  }
+  return true;
+}
+function goNext(){
+  if(!validate())return;
+  if(curStep===2)saveStep2();
+  else if(curStep===3)saveStep3();
+  else if(curStep===4)saveStep4();
+  else if(curStep===5)saveStep5();
+  if(curStep===N_STEPS){
+    saveState();
+    toast('✅ Dados salvos com sucesso!','#389e0d');
+    setTimeout(()=>{curStep=1;curHrIdx=null;updateUI();},1500);
+    return;
+  }
+  curStep++;
+  window.scrollTo({top:0,behavior:'smooth'});
+  updateUI();
+}
+function goBack(){
+  if(curStep>1){curStep--;window.scrollTo({top:0,behavior:'smooth'});updateUI();}
+}
+
+// ═══════════════════════════
+//  INIT
+// ═══════════════════════════
+(async()=>{await loadState();updateUI();})();
+document.getElementById('btn-back').style.display='none';
+</script>
+</body>
+</html>
