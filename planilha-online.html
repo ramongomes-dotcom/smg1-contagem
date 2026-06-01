@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMG1 — Planilha Operacional</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--blk:#1a1a1a;--yel:#f5c800;--grn:#52c41a;--red:#ff4d4f;--bg:#f4f6fb;--card:#fff;--border:#e0e0e0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:#222;font-size:13px}
+
+/* HEADER */
+.hdr{background:var(--blk);color:#fff;padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.hdr-left{display:flex;align-items:center;gap:12px}
+.badge{background:var(--yel);color:var(--blk);font-weight:900;font-size:11px;padding:4px 8px;border-radius:5px}
+.hdr h1{font-size:15px;font-weight:800;color:#fff}
+.hdr h1 em{color:var(--yel);font-style:normal}
+.hdr-right{display:flex;align-items:center;gap:10px}
+#fb-status{font-size:12px;font-weight:800}
+.btn-hdr{background:var(--yel);color:var(--blk);border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:800;cursor:pointer}
+.btn-hdr:hover{background:#ffe033}
+.btn-ghost{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer}
+
+/* SHIFT TABS */
+.tabs{background:#fff;border-bottom:2px solid var(--border);display:flex;padding:0 20px;gap:4px}
+.tab{padding:10px 24px;cursor:pointer;border:none;background:transparent;font-size:13px;font-weight:800;color:#999;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab.active{color:var(--blk);border-bottom-color:var(--yel)}
+
+/* CONTENT */
+.content{max-width:1400px;margin:0 auto;padding:16px 20px}
+
+/* SECTION CARD */
+.sec{background:var(--card);border-radius:10px;padding:14px 16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.sec-title{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:var(--blk);padding-bottom:10px;margin-bottom:12px;border-bottom:2px solid var(--yel);display:flex;justify-content:space-between;align-items:center}
+
+/* HEADER INFO GRID */
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:4px}
+.info-item label{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:4px}
+.info-item input,.info-item select{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;background:#fff;transition:border-color .15s}
+.info-item input:focus,.info-item select:focus{outline:none;border-color:var(--yel)}
+
+/* HC GRID */
+.hc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.hc-box{border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;background:#fafafa}
+.hc-box.calc{background:#fffbe6;border-color:#ffe066}
+.hc-box label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:#888;display:block;margin-bottom:4px}
+.hc-box input{width:100%;border:none;font-size:20px;font-weight:900;color:var(--blk);background:transparent;padding:0}
+.hc-box input:focus{outline:none;border-bottom:2px solid var(--yel)}
+.hc-box input[readonly]{color:#b8860b}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:600px}
+th{background:var(--blk);color:#fff;padding:7px 10px;text-align:center;font-weight:700;white-space:nowrap;font-size:11px;position:sticky;top:52px}
+th.left{text-align:left}
+td{padding:4px 6px;border:1px solid #ececec;text-align:center;vertical-align:middle}
+td.label{text-align:left;font-weight:700;background:#f8f8f8;white-space:nowrap;padding-left:10px}
+td.brk{background:#fff8e6;color:#d46b08;font-style:italic;font-weight:600}
+tr.total td{background:#fffbe6;font-weight:800;color:var(--blk)}
+tr.plan td{background:#f0f8ff;color:#0050b3}
+tr.gap td{font-weight:800}
+tr.pct td{background:#f6f8ff;font-weight:700}
+.ci{width:100%;border:none;background:transparent;text-align:center;font-size:12px;padding:2px 0;font-family:inherit;color:inherit}
+.ci:focus{outline:2px solid var(--yel);border-radius:2px;background:#fff}
+.good{color:#389e0d;font-weight:700}
+.bad{color:#cf1322;font-weight:700}
+.warn{color:#d46b08;font-weight:700}
+
+/* LINE HAUL TABLE */
+.lh-table{width:100%;border-collapse:collapse;font-size:12px}
+.lh-table th{background:var(--blk);color:#fff;padding:7px 10px;text-align:left;font-weight:700;font-size:11px}
+.lh-table td{padding:6px 10px;border:1px solid #ececec;vertical-align:middle}
+.lh-table input,.lh-table select{width:100%;border:none;background:transparent;font-size:12px;font-family:inherit;padding:2px 0}
+.lh-table input:focus,.lh-table select:focus{outline:1px solid var(--yel);border-radius:2px;background:#fff}
+.btn-add{background:var(--yel);color:var(--blk);border:none;border-radius:5px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer;margin-top:8px}
+.btn-del{background:#fff0f0;color:var(--red);border:1px solid #ffccc7;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer}
+
+/* SUMMARY CARDS */
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--card);border-radius:9px;padding:13px 15px;box-shadow:0 1px 4px rgba(0,0,0,.08);border-left:4px solid #ccc}
+.kpi.g{border-left-color:var(--grn)}
+.kpi.r{border-left-color:var(--red)}
+.kpi.y{border-left-color:var(--yel)}
+.kpi-lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#aaa}
+.kpi-val{font-size:22px;font-weight:900;color:var(--blk);margin:4px 0 2px;line-height:1}
+.kpi-sub{font-size:11px;color:#bbb}
+
+/* TOAST */
+#toast{position:fixed;top:62px;right:20px;background:var(--blk);color:var(--yel);padding:10px 18px;border-radius:8px;font-size:13px;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.25);display:none;z-index:999}
+
+@media(max-width:768px){
+  .hdr h1{font-size:12px}
+  .badge{font-size:9px;padding:3px 6px}
+  .content{padding:10px}
+  table{font-size:11px}
+  th{font-size:10px;padding:5px 6px}
+  .info-grid{grid-template-columns:1fr 1fr}
+  .hc-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="badge">SMG1</div>
+    <h1>Planilha <em>Operacional</em></h1>
+  </div>
+  <div class="hdr-right">
+    <span id="fb-status" style="color:#888">⚫ Conectando...</span>
+    <button class="btn-ghost" onclick="window.print()">🖨 Imprimir</button>
+    <button class="btn-hdr" onclick="novoTurno()">📅 Novo Turno</button>
+  </div>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<div class="content" id="content"></div>
+
+<script>
+// ── FIREBASE ──
+const FB={apiKey:"AIzaSyC48VRl8d3v6SAA2nDp3m1iJCXx2GNHLO0",authDomain:"smg1-contagem-2026.firebaseapp.com",databaseURL:"https://smg1-contagem-2026-default-rtdb.firebaseio.com",projectId:"smg1-contagem-2026",storageBucket:"smg1-contagem-2026.firebasestorage.app",messagingSenderId:"845783097839",appId:"1:845783097839:web:20a5ff6aa4655342a5161a"};
+let db=null;
+function initFB(){
+  try{firebase.app();}catch(e){firebase.initializeApp(FB);}
+  db=firebase.database();
+  setStatus(true);
+  db.ref('planilha-op').on('value',snap=>{
+    if(!snap.exists())return;
+    const remote=snap.val();
+    if(JSON.stringify(remote)===JSON.stringify(S))return;
+    S=remote;
+    ensureShifts();
+    render();
+    toast('🔄 Atualizado em tempo real');
+  });
+}
+function setStatus(ok){document.getElementById('fb-status').textContent=ok?'🟢 Online':'🔴 Offline';document.getElementById('fb-status').style.color=ok?'#52c41a':'#ff4d4f';}
+function save(){
+  localStorage.setItem('planilha-op',JSON.stringify(S));
+  if(db)db.ref('planilha-op').set(S).catch(()=>setStatus(false));
+}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2200);}
+
+// ── STATE ──
+const SHIFTS=['AM','PM','CHP'];
+const SHIFT_HOURS={
+  AM:['02:00','03:00','04:00','☕ ALMOÇO','05:00','06:00','07:00'],
+  PM:['10:00','11:00','12:00','🍽 ALMOÇO','13:00','14:00'],
+  CHP:['18:30','19:30','🍽 JANTAR','20:30','21:30']
+};
+const N_STN_LINE=4, N_STN_VOL=3, N_LH=6;
+let S={}, curShift='AM';
+
+function mkShift(sh){
+  const hrs=SHIFT_HOURS[sh];
+  return{
+    date:new Date().toISOString().slice(0,10),
+    inicioLinha:'', inicioVol:'', horaFinal:'', tempoOps:'',
+    volPlan:0, volProcess:0, volRoteir:0,
+    hcNecessario:0, hcFixos:0, hcPT:0, hcTemp:0, hcDiaristas:0, hcAusJust:0, hcAusInjust:0,
+    stnLineNames:Array.from({length:N_STN_LINE},(_,i)=>`Estação ${i+1} Linha`),
+    stnVolNames:Array.from({length:N_STN_VOL},(_,i)=>`Estação ${i+1} Volumoso`),
+    stnLineData:Array.from({length:N_STN_LINE},()=>Array(hrs.length).fill('')),
+    stnVolData:Array.from({length:N_STN_VOL},()=>Array(hrs.length).fill('')),
+    sortData:Array(hrs.length).fill(''),
+    obs:'',
+    lineHaul:Array.from({length:N_LH},()=>({origem:'',volume:'',eta:'',chegou:''})),
+  };
+}
+
+function ensureShifts(){SHIFTS.forEach(sh=>{if(!S[sh])S[sh]=mkShift(sh);});}
+
+function loadState(){
+  try{S=JSON.parse(localStorage.getItem('planilha-op')||'{}');}catch(e){}
+  ensureShifts();
+}
+
+// ── HELPERS ──
+const num=v=>{const n=parseFloat(String(v||0).replace(/,/g,'.'));return isNaN(n)?0:n;};
+const fmtN=v=>Math.round(v).toLocaleString('pt-BR');
+const fmtPct=v=>v===0?'—':v.toFixed(1).replace('.',',')+'%';
+const isBreak=h=>h.startsWith('☕')||h.startsWith('🍽');
+
+// ── CALCULATE ──
+function calc(sh){
+  const s=S[sh]; const hrs=SHIFT_HOURS[sh];
+  const hcBase=num(s.hcFixos)+num(s.hcPT)+num(s.hcTemp);
+  const hcTotal=Math.max(0,hcBase+num(s.hcDiaristas)-num(s.hcAusJust)-num(s.hcAusInjust));
+  const hcAus=num(s.hcAusJust)+num(s.hcAusInjust);
+  const absent=hcBase>0?(hcAus/hcBase)*100:0;
+
+  const lineHrTot=hrs.map((_,ci)=>s.stnLineData.reduce((a,r)=>a+num(r[ci]),0));
+  const volHrTot=hrs.map((_,ci)=>s.stnVolData.reduce((a,r)=>a+num(r[ci]),0));
+  const allHrTot=hrs.map((_,ci)=>lineHrTot[ci]+volHrTot[ci]);
+  const etiqTotal=allHrTot.reduce((a,v)=>a+v,0);
+  const sortTotal=s.sortData.reduce((a,v)=>a+num(v),0);
+  const planEtiq=num(s.volProcess)||num(s.volPlan);
+  const pctEtiq=planEtiq>0?(etiqTotal/planEtiq)*100:0;
+  const pctSort=num(s.volRoteir)>0?(sortTotal/num(s.volRoteir))*100:0;
+
+  const planPerHr=hrs.filter(h=>!isBreak(h)).length>0?planEtiq/hrs.filter(h=>!isBreak(h)).length:0;
+  const hrPcts=allHrTot.map((v,i)=>isBreak(hrs[i])?null:(planPerHr>0?(v/planPerHr)*100:null));
+
+  return{hcTotal,hcAus,absent,etiqTotal,sortTotal,planEtiq,pctEtiq,pctSort,lineHrTot,volHrTot,allHrTot,hrPcts,planPerHr};
+}
+
+// ── RENDER ──
+function renderTabs(){
+  document.getElementById('tabs').innerHTML=SHIFTS.map(sh=>
+    `<button class="tab ${sh===curShift?'active':''}" onclick="curShift='${sh}';renderAll()">${sh}</button>`
+  ).join('');
+}
+
+function renderAll(){renderTabs();renderContent();}
+
+function renderContent(){
+  const sh=curShift; const s=S[sh]; const hrs=SHIFT_HOURS[sh]; const c=calc(sh);
+
+  const clr=p=>p>=100?'good':p>=80?'warn':'bad';
+
+  let html=`
+  <!-- SUMMARY KPIS -->
+  <div class="summary-grid">
+    <div class="kpi ${c.pctEtiq>=100?'g':c.pctEtiq>=80?'y':'r'}">
+      <div class="kpi-lbl">Etiquetagem</div>
+      <div class="kpi-val">${fmtPct(c.pctEtiq)}</div>
+      <div class="kpi-sub">${fmtN(c.etiqTotal)} de ${fmtN(c.planEtiq)} pcts</div>
+    </div>
+    <div class="kpi ${c.pctSort>=100?'g':c.pctSort>=80?'y':'r'}">
+      <div class="kpi-lbl">Sorting (No Carrinho)</div>
+      <div class="kpi-val">${fmtPct(c.pctSort)}</div>
+      <div class="kpi-sub">${fmtN(c.sortTotal)} de ${fmtN(num(s.volRoteir))} pcts</div>
+    </div>
+    <div class="kpi ${c.absent<=3?'g':c.absent<=6?'y':'r'}">
+      <div class="kpi-lbl">Absenteísmo</div>
+      <div class="kpi-val">${fmtPct(c.absent)}</div>
+      <div class="kpi-sub">${c.hcTotal} presentes · ${c.hcAus} aus.</div>
+    </div>
+    <div class="kpi y">
+      <div class="kpi-lbl">GAP Etiquetagem</div>
+      <div class="kpi-val ${c.etiqTotal-c.planEtiq>=0?'good':'bad'}">${c.etiqTotal-c.planEtiq>=0?'+':''}${fmtN(c.etiqTotal-c.planEtiq)}</div>
+      <div class="kpi-sub">Real − Planejado</div>
+    </div>
+  </div>
+
+  <!-- INFO GERAL -->
+  <div class="sec">
+    <div class="sec-title">📋 Informações do Turno ${sh}</div>
+    <div class="info-grid">
+      <div class="info-item"><label>Data</label>
+        <input type="date" value="${s.date}" onchange="S['${sh}'].date=this.value;save()"></div>
+      <div class="info-item"><label>Início Linha</label>
+        <input type="time" value="${s.inicioLinha}" onchange="S['${sh}'].inicioLinha=this.value;save()"></div>
+      <div class="info-item"><label>Início Volumoso</label>
+        <input type="time" value="${s.inicioVol}" onchange="S['${sh}'].inicioVol=this.value;save()"></div>
+      <div class="info-item"><label>Hora Final</label>
+        <input type="time" value="${s.horaFinal}" onchange="S['${sh}'].horaFinal=this.value;save()"></div>
+      <div class="info-item"><label>Vol. Planejado</label>
+        <input type="number" value="${s.volPlan||''}" placeholder="0" onchange="S['${sh}'].volPlan=+this.value;save();renderContent()"></div>
+      <div class="info-item"><label>Vol. Processados</label>
+        <input type="number" value="${s.volProcess||''}" placeholder="0" onchange="S['${sh}'].volProcess=+this.value;save();renderContent()"></div>
+      <div class="info-item"><label>Vol. Roteirizado</label>
+        <input type="number" value="${s.volRoteir||''}" placeholder="0" onchange="S['${sh}'].volRoteir=+this.value;save();renderContent()"></div>
+      <div class="info-item"><label>Observações</label>
+        <input type="text" value="${s.obs||''}" placeholder="Obs..." onchange="S['${sh}'].obs=this.value;save()"></div>
+    </div>
+  </div>
+
+  <!-- HC -->
+  <div class="sec">
+    <div class="sec-title">👥 HC Presente <small style="font-weight:400;text-transform:none;font-size:11px;color:#888">— lançado uma vez por turno</small></div>
+    <div class="hc-grid">
+      <div class="hc-box"><label>HC Necessário</label><input type="number" value="${s.hcNecessario||''}" placeholder="0" onchange="S['${sh}'].hcNecessario=+this.value;save();renderContent()"></div>
+      <div class="hc-box"><label>Fixos</label><input type="number" value="${s.hcFixos||''}" placeholder="0" onchange="S['${sh}'].hcFixos=+this.value;save();renderContent()"></div>
+      <div class="hc-box"><label>Part Time</label><input type="number" value="${s.hcPT||''}" placeholder="0" onchange="S['${sh}'].hcPT=+this.value;save();renderContent()"></div>
+      <div class="hc-box"><label>Temporários</label><input type="number" value="${s.hcTemp||''}" placeholder="0" onchange="S['${sh}'].hcTemp=+this.value;save();renderContent()"></div>
+      <div class="hc-box"><label>Diaristas</label><input type="number" value="${s.hcDiaristas||''}" placeholder="0" onchange="S['${sh}'].hcDiaristas=+this.value;save();renderContent()"></div>
+      <div class="hc-box"><label>Aus. Justificadas</label><input type="number" value="${s.hcAusJust||''}" placeholder="0" onchange="S['${sh}'].hcAusJust=+this.value;save();renderContent()"></div>
+      <div class="hc-box"><label>Aus. Injustificadas</label><input type="number" value="${s.hcAusInjust||''}" placeholder="0" onchange="S['${sh}'].hcAusInjust=+this.value;save();renderContent()"></div>
+      <div class="hc-box calc"><label>HC Presente Total</label><input type="number" value="${c.hcTotal}" readonly></div>
+      <div class="hc-box calc"><label>Total Ausências</label><input type="number" value="${c.hcAus}" readonly style="color:${c.hcAus>0?'#cf1322':'#389e0d'}"></div>
+      <div class="hc-box calc"><label>Absenteísmo</label><input type="text" value="${fmtPct(c.absent)}" readonly style="color:${c.absent<=3?'#389e0d':c.absent<=6?'#d46b08':'#cf1322'}"></div>
+    </div>
+  </div>
+
+  <!-- ETIQUETAGEM -->
+  <div class="sec">
+    <div class="sec-title">📦 Etiquetagem — Produção por Hora</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr>
+        <th class="left" style="min-width:160px">Estação</th>
+        ${hrs.map(h=>`<th>${h}</th>`).join('')}
+        <th>TOTAL</th>
+      </tr></thead>
+      <tbody>
+        <!-- Linha / GM -->
+        <tr><td class="label" colspan="${hrs.length+2}" style="background:#edf2fb;font-size:10px;letter-spacing:.5px;color:#0050b3">▸ LINHA / GM</td></tr>
+        ${s.stnLineNames.map((name,ri)=>`
+        <tr>
+          <td class="label"><input class="ci left" value="${name}" style="font-weight:700" onchange="S['${sh}'].stnLineNames[${ri}]=this.value;save()"></td>
+          ${hrs.map((h,ci)=>isBreak(h)?`<td class="brk">—</td>`:`<td><input class="ci" type="number" value="${s.stnLineData[ri][ci]||''}" placeholder="0" onchange="S['${sh}'].stnLineData[${ri}][${ci}]=+this.value||'';save();renderContent()"></td>`).join('')}
+          <td style="font-weight:800;background:#f8f8f8">${fmtN(s.stnLineData[ri].reduce((a,v)=>a+num(v),0))}</td>
+        </tr>`).join('')}
+        <!-- Volumoso -->
+        <tr><td class="label" colspan="${hrs.length+2}" style="background:#edf2fb;font-size:10px;letter-spacing:.5px;color:#0050b3">▸ VOLUMOSO</td></tr>
+        ${s.stnVolNames.map((name,ri)=>`
+        <tr>
+          <td class="label"><input class="ci left" value="${name}" style="font-weight:700" onchange="S['${sh}'].stnVolNames[${ri}]=this.value;save()"></td>
+          ${hrs.map((h,ci)=>isBreak(h)?`<td class="brk">—</td>`:`<td><input class="ci" type="number" value="${s.stnVolData[ri][ci]||''}" placeholder="0" onchange="S['${sh}'].stnVolData[${ri}][${ci}]=+this.value||'';save();renderContent()"></td>`).join('')}
+          <td style="font-weight:800;background:#f8f8f8">${fmtN(s.stnVolData[ri].reduce((a,v)=>a+num(v),0))}</td>
+        </tr>`).join('')}
+        <!-- Totais -->
+        <tr class="total">
+          <td class="label">TOTAL REALIZADO</td>
+          ${c.allHrTot.map(v=>`<td>${fmtN(v)}</td>`).join('')}
+          <td>${fmtN(c.etiqTotal)}</td>
+        </tr>
+        <tr class="plan">
+          <td class="label">PLANEJADO / HORA</td>
+          ${hrs.map(h=>isBreak(h)?`<td class="brk">—</td>`:`<td>${fmtN(c.planPerHr)}</td>`).join('')}
+          <td>${fmtN(c.planEtiq)}</td>
+        </tr>
+        <tr class="gap">
+          <td class="label">GAP</td>
+          ${c.allHrTot.map((v,i)=>isBreak(hrs[i])?`<td class="brk">—</td>`:`<td class="${v-c.planPerHr>=0?'good':'bad'}">${v>0?(v-c.planPerHr>=0?'+':'')+fmtN(v-c.planPerHr):'—'}</td>`).join('')}
+          <td class="${c.etiqTotal-c.planEtiq>=0?'good':'bad'}">${c.etiqTotal>0?(c.etiqTotal-c.planEtiq>=0?'+':'')+fmtN(c.etiqTotal-c.planEtiq):'—'}</td>
+        </tr>
+        <tr class="pct">
+          <td class="label">% HORA</td>
+          ${c.hrPcts.map(p=>p===null?`<td class="brk">—</td>`:`<td class="${clr(p)}">${fmtPct(p)}</td>`).join('')}
+          <td class="${clr(c.pctEtiq)}">${fmtPct(c.pctEtiq)}</td>
+        </tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- SORTING -->
+  <div class="sec">
+    <div class="sec-title">🗂 Sorting — No Carrinho por Hora</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr>
+        <th class="left">Métrica</th>
+        ${hrs.map(h=>`<th>${h}</th>`).join('')}
+        <th>TOTAL</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="label">No Carrinho (real)</td>
+          ${hrs.map((h,ci)=>isBreak(h)?`<td class="brk">—</td>`:`<td><input class="ci" type="number" value="${s.sortData[ci]||''}" placeholder="0" onchange="S['${sh}'].sortData[${ci}]=+this.value||'';save();renderContent()"></td>`).join('')}
+          <td style="font-weight:800">${fmtN(c.sortTotal)}</td>
+        </tr>
+        <tr class="plan">
+          <td class="label">Planejado / Hora</td>
+          ${hrs.map(h=>isBreak(h)?`<td class="brk">—</td>`:`<td>${num(s.volRoteir)>0?fmtN(num(s.volRoteir)/hrs.filter(x=>!isBreak(x)).length):'—'}</td>`).join('')}
+          <td>${fmtN(num(s.volRoteir))}</td>
+        </tr>
+        <tr class="pct">
+          <td class="label">% Acumulado</td>
+          ${(()=>{let cum=0;return hrs.map((h,ci)=>{if(isBreak(h))return`<td class="brk">—</td>`;cum+=num(s.sortData[ci]);const p=num(s.volRoteir)>0?(cum/num(s.volRoteir))*100:0;return`<td class="${clr(p)}">${num(s.sortData[ci])>0?fmtPct(p):'—'}</td>`;}).join('');})()}
+          <td class="${clr(c.pctSort)}">${fmtPct(c.pctSort)}</td>
+        </tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <!-- LINE HAUL -->
+  <div class="sec">
+    <div class="sec-title">🚛 Line Haul — Pendentes</div>
+    <div class="tbl-wrap">
+    <table class="lh-table">
+      <thead><tr><th>Origem</th><th>Volume</th><th>ETA</th><th>Chegou?</th><th></th></tr></thead>
+      <tbody>
+        ${s.lineHaul.filter((_,i)=>i<N_LH).map((row,i)=>`
+        <tr>
+          <td><input class="ci" value="${row.origem||''}" placeholder="Ex: BRXSP1" onchange="S['${sh}'].lineHaul[${i}].origem=this.value;save()"></td>
+          <td><input class="ci" type="number" value="${row.volume||''}" placeholder="0" onchange="S['${sh}'].lineHaul[${i}].volume=+this.value||'';save()"></td>
+          <td><input class="ci" type="time" value="${row.eta||''}" onchange="S['${sh}'].lineHaul[${i}].eta=this.value;save()"></td>
+          <td>
+            <select class="ci" onchange="S['${sh}'].lineHaul[${i}].chegou=this.value;save()">
+              <option value="" ${!row.chegou?'selected':''}>—</option>
+              <option value="SIM" ${row.chegou==='SIM'?'selected':''}>✅ SIM</option>
+              <option value="NÃO" ${row.chegou==='NÃO'?'selected':''}>❌ NÃO</option>
+            </select>
+          </td>
+          <td><button class="btn-del" onclick="S['${sh}'].lineHaul[${i}]={origem:'',volume:'',eta:'',chegou:''};save();renderContent()">✕</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>
+  </div>`;
+
+  document.getElementById('content').innerHTML=html;
+}
+
+function novoTurno(){
+  if(!confirm('Limpar dados do turno '+curShift+' para novo dia?'))return;
+  S[curShift]=mkShift(curShift);save();renderContent();
+  toast('✅ Turno '+curShift+' zerado!');
+}
+
+// BOOT
+loadState();
+renderAll();
+try{initFB();}catch(e){setStatus(false);}
+</script>
+</body>
+</html>
