@@ -190,6 +190,8 @@ body::before{
 }
 
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -384,6 +386,16 @@ body::before{
 </div>
 
 <script>
+const FIREBASE_CONFIG={apiKey:"AIzaSyC48VRl8d3v6SAA2nDp3m1iJCXx2GNHLO0",authDomain:"smg1-contagem-2026.firebaseapp.com",databaseURL:"https://smg1-contagem-2026-default-rtdb.firebaseio.com",projectId:"smg1-contagem-2026",storageBucket:"smg1-contagem-2026.firebasestorage.app",messagingSenderId:"845783097839",appId:"1:845783097839:web:20a5ff6aa4655342a5161a"};
+let _db=null;
+function isFirebaseReady(){
+  if(_db)return true;
+  if(!FIREBASE_CONFIG.databaseURL)return false;
+  try{firebase.app();}catch(e){firebase.initializeApp(FIREBASE_CONFIG);}
+  _db=firebase.database();return true;
+}
+function setFbStatus(ok){const el=document.getElementById('fb-dot');if(el)el.textContent=ok?'🟢':'🔴';}
+
 // ═══════════════════════════════════════════════════════
 //  CONSTANTS
 // ═══════════════════════════════════════════════════════
