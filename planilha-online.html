@@ -251,6 +251,30 @@ function renderContent(){
   const clr=p=>p>=100?'good':p>=80?'warn':'bad';
 
   let html=`
+  <!-- INFO GERAL -->
+  <div class="sec">
+    <div class="sec-title">📋 Informações do Turno ${sh}</div>
+    <div class="info-grid">
+      <div class="info-item"><label>Data</label>
+        <input type="date" value="${s.date}" onchange="S['${sh}'].date=this.value;save()"></div>
+      <div class="info-item"><label>Início Linha</label>
+        <input type="time" value="${s.inicioLinha}" onchange="S['${sh}'].inicioLinha=this.value;save()"></div>
+      <div class="info-item"><label>Início Volumoso</label>
+        <input type="time" value="${s.inicioVol}" onchange="S['${sh}'].inicioVol=this.value;save()"></div>
+      <div class="info-item"><label>Hora Final</label>
+        <input type="time" value="${s.horaFinal}" onchange="S['${sh}'].horaFinal=this.value;save()"></div>
+      <div class="info-item"><label>Vol. Planejado</label>
+        <input type="number" value="${s.volPlan||''}" placeholder="0" onchange="S['${sh}'].volPlan=+this.value;save();renderContent()"></div>
+      <div class="info-item"><label>Vol. Processados</label>
+        <input type="number" value="${s.volProcess||''}" placeholder="0" onchange="S['${sh}'].volProcess=+this.value;save();renderContent()"></div>
+      <div class="info-item"><label>Vol. Roteirizado</label>
+        <input type="number" value="${s.volRoteir||''}" placeholder="0" onchange="S['${sh}'].volRoteir=+this.value;save();renderContent()"></div>
+      <div class="info-item"><label>Observações</label>
+        <input type="text" value="${s.obs||''}" placeholder="Obs..." onchange="S['${sh}'].obs=this.value;save()"></div>
+    </div>
+  </div>
+
+
   <!-- SUMMARY KPIS -->
   <div class="summary-grid">
     <div class="kpi ${c.pctEtiq>=100?'g':c.pctEtiq>=80?'y':'r'}">
@@ -272,29 +296,6 @@ function renderContent(){
       <div class="kpi-lbl">GAP Etiquetagem</div>
       <div class="kpi-val ${c.etiqTotal-c.planEtiq>=0?'good':'bad'}">${c.etiqTotal-c.planEtiq>=0?'+':''}${fmtN(c.etiqTotal-c.planEtiq)}</div>
       <div class="kpi-sub">Real − Planejado</div>
-    </div>
-  </div>
-
-  <!-- INFO GERAL -->
-  <div class="sec">
-    <div class="sec-title">📋 Informações do Turno ${sh}</div>
-    <div class="info-grid">
-      <div class="info-item"><label>Data</label>
-        <input type="date" value="${s.date}" onchange="S['${sh}'].date=this.value;save()"></div>
-      <div class="info-item"><label>Início Linha</label>
-        <input type="time" value="${s.inicioLinha}" onchange="S['${sh}'].inicioLinha=this.value;save()"></div>
-      <div class="info-item"><label>Início Volumoso</label>
-        <input type="time" value="${s.inicioVol}" onchange="S['${sh}'].inicioVol=this.value;save()"></div>
-      <div class="info-item"><label>Hora Final</label>
-        <input type="time" value="${s.horaFinal}" onchange="S['${sh}'].horaFinal=this.value;save()"></div>
-      <div class="info-item"><label>Vol. Planejado</label>
-        <input type="number" value="${s.volPlan||''}" placeholder="0" onchange="S['${sh}'].volPlan=+this.value;save();renderContent()"></div>
-      <div class="info-item"><label>Vol. Processados</label>
-        <input type="number" value="${s.volProcess||''}" placeholder="0" onchange="S['${sh}'].volProcess=+this.value;save();renderContent()"></div>
-      <div class="info-item"><label>Vol. Roteirizado</label>
-        <input type="number" value="${s.volRoteir||''}" placeholder="0" onchange="S['${sh}'].volRoteir=+this.value;save();renderContent()"></div>
-      <div class="info-item"><label>Observações</label>
-        <input type="text" value="${s.obs||''}" placeholder="Obs..." onchange="S['${sh}'].obs=this.value;save()"></div>
     </div>
   </div>
 
