@@ -156,6 +156,24 @@ body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%
         <select id="brk-select" onchange="setBrkSlot(this.value)"></select>
       </div>
     </div>
+    <div class="card" id="vol-card" style="display:none">
+      <div class="card-title"><span class="icon">📦</span>Volume do Turno <span style="font-size:11px;font-weight:400;color:#888;text-transform:none;letter-spacing:0">— lançar uma vez por dia</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--sub);margin-bottom:6px">Vol. Planejado</label>
+          <input type="number" id="f-vol-plan" inputmode="numeric" placeholder="0"
+            style="width:100%;padding:13px 8px;border:2px solid var(--border);border-radius:10px;font-size:22px;font-weight:900;text-align:center;color:var(--blk);font-family:inherit;-webkit-appearance:none"
+            onchange="saveVolume()">
+        </div>
+        <div>
+          <label style="display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--sub);margin-bottom:6px">Vol. Roteirizado</label>
+          <input type="number" id="f-vol-roteir" inputmode="numeric" placeholder="0"
+            style="width:100%;padding:13px 8px;border:2px solid var(--border);border-radius:10px;font-size:22px;font-weight:900;text-align:center;color:var(--blk);font-family:inherit;-webkit-appearance:none"
+            onchange="saveVolume()">
+        </div>
+      </div>
+    </div>
+
     <div class="card" id="hour-card" style="display:none">
       <div class="card-title"><span class="icon">🕐</span>Hora do lançamento</div>
       <div class="hour-grid" id="hour-grid"></div>
@@ -373,6 +391,8 @@ function buildStep1(){
     if(el) el.className='shift-tile'+(curShift===sh?' active':'');
   });
   // Hour card
+  const vc=document.getElementById('vol-card');
+  if(vc) vc.style.display=curShift?'block':'none';
   const hc=document.getElementById('hour-card');
   if(hc) hc.style.display=curShift?'block':'none';
   if(curShift) buildHourGrid();
@@ -399,9 +419,21 @@ function selectShift(sh){
   } else {
     brkField.style.display='none';
   }
+  document.getElementById('vol-card').style.display='block';
+  document.getElementById('f-vol-plan').value=S[sh].volPlan||'';
+  document.getElementById('f-vol-roteir').value=S[sh].volRoteir||'';
   document.getElementById('hour-card').style.display='block';
   buildHourGrid();
   updateUI();
+}
+
+function saveVolume(){
+  if(!curShift)return;
+  const p=parseFloat(document.getElementById('f-vol-plan').value)||0;
+  const r=parseFloat(document.getElementById('f-vol-roteir').value)||0;
+  if(p>0)S[curShift].volPlan=p;
+  if(r>0)S[curShift].volRoteir=r;
+  saveState();
 }
 
 function setBrkSlot(val){
