@@ -417,8 +417,11 @@ function saveState(){
   }
 }
 
+let _syncStarted=false;
 function startRealtimeSync(){
   if(!isFirebaseReady()) return;
+  if(_syncStarted) return;
+  _syncStarted=true;
   _db.ref('rha-v3').on('value', snap=>{
     if(!snap.exists()) return;
     const remote = snap.val();
@@ -983,7 +986,7 @@ async function applyFirebaseConfig(){
     }
   }catch(e){res.textContent='❌ '+e.message;res.style.color='#cf1322';setOnlineStatus(false);}
 }
-(()=>{const cfg=JSON.parse(localStorage.getItem('rha-fb-config')||'{}');if(cfg.databaseURL)Object.assign(FIREBASE_CONFIG,cfg);})();
+// Config Firebase hardcoded — sem override de localStorage
 
 // ── SHARE MODAL ──
 function getMobileUrl(){const base=window.location.href.replace(/[^/]*$/,'');return base+'formulario-lancamento.html';}
