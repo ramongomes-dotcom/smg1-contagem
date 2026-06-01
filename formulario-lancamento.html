@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Lançamento Hora a Hora</title>
+<style>
+:root{
+  --blue:#1a1a1a;--blue2:#0050b3;--yellow:#FFE600;
+  --green:#52c41a;--red:#ff4d4f;--orange:#fa8c16;
+  --border:#d9d9d9;--bg:#f0f2f5;--card:#fff;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);font-family:'Segoe UI',system-ui,sans-serif;color:#1a1a1a;}
+body::before{
+  content:'';
+  position:fixed;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:380px;height:380px;
+  background-image:url('smg1-logo.png');
+  background-size:contain;
+  background-repeat:no-repeat;
+  background-position:center;
+  opacity:0.06;
+  pointer-events:none;
+  z-index:0;
+}
+.wrap,.hdr{position:relative;z-index:1;}
+
+/* ── HEADER ── */
+.hdr{background:var(--blue);color:#fff;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.3);position:sticky;top:0;z-index:100;}
+.hdr-left{display:flex;align-items:center;gap:10px;}
+.badge{background:#f5c800;color:#1a1a1a;font-weight:900;font-size:11px;padding:5px 10px;border-radius:5px;white-space:nowrap;}
+.hdr h1{font-size:15px;font-weight:800;}
+.hdr h1 em{color:var(--yellow);font-style:normal;}
+.hdr-info{font-size:11px;opacity:.7;text-align:right;line-height:1.4;}
+
+/* ── WRAPPER ── */
+.wrap{max-width:680px;margin:0 auto;padding:16px 14px 80px;}
+
+/* ── STEP PILLS ── */
+.steps{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;}
+.step-pill{flex:1 1 0;text-align:center;padding:7px 4px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.4px;border:2px solid var(--border);color:#aaa;background:#fff;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.step-pill.active{background:#1a1a1a;color:#f5c800;border-color:#1a1a1a;}
+.step-pill.done{background:var(--green);color:#fff;border-color:var(--green);}
+
+/* ── CARD ── */
+.card{background:var(--card);border-radius:12px;padding:20px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+.card-title{font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.7px;color:#1a1a1a;border-bottom:2px solid var(--yellow);padding-bottom:9px;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.card-title .icon{font-size:17px;}
+
+/* ── FIELD ── */
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#888;margin-bottom:6px;}
+.field input,.field select,.field textarea{
+  width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:8px;
+  font-size:15px;font-family:inherit;background:#fff;color:#111;
+  transition:border-color .15s;
+  -webkit-appearance:none;appearance:none;
+}
+.field input:focus,.field select:focus,.field textarea:focus{
+  outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,51,102,.12);
+}
+.field textarea{resize:vertical;min-height:60px;font-size:14px;}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M6 8L0 0h12z' fill='%23666'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;}
+
+/* large number input */
+.field input[type=number]{font-size:22px;font-weight:700;text-align:center;color:#1a1a1a;}
+.field input[type=number]::placeholder{color:#ccc;font-size:18px;}
+
+/* ── ROW LAYOUT ── */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+@media(max-width:400px){.row3{grid-template-columns:1fr 1fr;}}
+
+/* ── STATION BLOCK ── */
+.stn-block{margin-bottom:10px;}
+.stn-label{font-size:11px;font-weight:700;color:#666;margin-bottom:5px;display:flex;align-items:center;gap:6px;}
+.stn-label input.stn-name{border:1px dashed var(--border);border-radius:4px;padding:3px 6px;font-size:11px;font-weight:700;color:#444;background:transparent;flex:1;min-width:0;}
+.stn-label input.stn-name:focus{outline:none;border-color:var(--blue);background:#fff;}
+.stn-input{width:100%;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:20px;font-weight:800;text-align:center;color:#1a1a1a;font-family:inherit;transition:border-color .15s;}
+.stn-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,51,102,.1);}
+.stn-input.has-val{border-color:var(--green);background:#f6ffed;}
+
+/* ── SECTION DIVIDER ── */
+.divider{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.8px;color:#7a5800;background:#fffbe6;padding:5px 10px;border-radius:4px;margin:14px 0 10px;}
+
+/* ── SHIFT SELECTOR ── */
+.shift-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
+.shift-btn{padding:14px 8px;border:2px solid var(--border);border-radius:10px;background:#fff;font-size:18px;font-weight:900;color:#aaa;cursor:pointer;text-align:center;transition:all .2s;letter-spacing:.5px;}
+.shift-btn.active{border-color:#1a1a1a;background:#1a1a1a;color:#f5c800;}
+.shift-btn:hover:not(.active){border-color:var(--blue2);color:var(--blue2);}
+
+/* ── HOUR SELECTOR ── */
+.hour-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:16px;}
+.hour-btn{padding:12px 6px;border:2px solid var(--border);border-radius:8px;background:#fff;font-size:12px;font-weight:700;color:#888;cursor:pointer;text-align:center;transition:all .2s;line-height:1.3;}
+.hour-btn.active{border-color:#1a1a1a;background:#1a1a1a;color:#f5c800;}
+.hour-btn.done{border-color:var(--green);color:var(--green);}
+.hour-btn.done.active{background:var(--green);color:#fff;border-color:var(--green);}
+.hour-btn:hover:not(.active){border-color:var(--blue2);color:var(--blue2);}
+.hour-btn .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-left:4px;vertical-align:middle;}
+
+/* ── NAV BUTTONS ── */
+.nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:10px;box-shadow:0 -2px 8px rgba(0,0,0,.1);z-index:100;}
+.btn{flex:1;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer;transition:all .15s;letter-spacing:.3px;}
+.btn-back{background:#f5f5f5;color:#666;}
+.btn-next{background:#1a1a1a;color:#f5c800;}
+.btn-save{background:var(--green);color:#fff;}
+.btn:active{transform:scale(.97);}
+
+/* ── TOAST ── */
+#toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#003366;color:#fff;padding:12px 22px;border-radius:8px;font-size:14px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.25);display:none;z-index:999;white-space:nowrap;}
+
+/* ── SUMMARY ── */
+.summary-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:8px;background:#f8f9ff;border:1px solid #e0e8ff;margin-bottom:8px;}
+.summary-label{font-size:12px;font-weight:700;color:#555;}
+.summary-val{font-size:18px;font-weight:900;color:var(--blue);}
+.summary-val.zero{color:#ccc;}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:30px 20px;color:#bbb;}
+.empty .big{font-size:40px;margin-bottom:8px;}
+.empty p{font-size:13px;}
+
+/* ── PROGRESS INDICATOR ── */
+.progress-bar-wrap{height:4px;background:#e8eaf0;border-radius:2px;margin:-1px 0 14px;}
+.progress-bar-fill{height:100%;border-radius:2px;background:#f5c800;transition:width .3s;}
+
+/* ═══════════════════════════════════
+   MOBILE — 768px
+═══════════════════════════════════ */
+@media(max-width:768px){
+  /* Prevent iOS input zoom — todos inputs >= 16px */
+  input,select,textarea{font-size:16px!important;}
+  .field input[type=number]{font-size:20px!important;}
+  .stn-input{font-size:18px!important;}
+
+  /* Header compacto */
+  .hdr{padding:10px 14px;}
+  .badge{font-size:10px;padding:4px 7px;}
+  .hdr h1{font-size:14px;}
+
+  /* Wrap */
+  .wrap{padding:12px 10px 90px;}
+
+  /* Step pills menores */
+  .steps{gap:4px;margin-bottom:14px;}
+  .step-pill{font-size:10px;padding:6px 2px;border-radius:14px;}
+
+  /* Card */
+  .card{padding:16px 14px;}
+
+  /* Shift buttons: 2x2 grid */
+  .shift-btns{grid-template-columns:1fr 1fr;gap:10px;}
+  .shift-btn{padding:18px 8px;font-size:22px;}
+
+  /* Hour grid: 2 colunas em tela pequena */
+  .hour-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;}
+  .hour-btn{padding:14px 8px;font-size:13px;}
+
+  /* Row layouts */
+  .row2{grid-template-columns:1fr;}
+  .row3{grid-template-columns:1fr 1fr;}
+
+  /* Estação inputs */
+  .stn-block{margin-bottom:12px;}
+
+  /* Nav */
+  .nav{padding:14px 12px;}
+  .btn{padding:16px;font-size:16px;}
+
+  /* Summary */
+  .summary-val{font-size:16px;}
+
+  /* HC total display */
+  #hc-calc-total{font-size:22px!important;}
+}
+
+/* ═══════════════════════════════════
+   MOBILE — 400px
+═══════════════════════════════════ */
+@media(max-width:400px){
+  .row3{grid-template-columns:1fr 1fr;}
+  .hour-grid{grid-template-columns:1fr 1fr;}
+  .hour-btn{padding:12px 4px;font-size:12px;}
+  .step-pill{font-size:9px;}
+  .card{padding:14px 12px;}
+  .shift-btn{padding:16px 6px;font-size:20px;}
+}
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="badge">SMG1 - Contagem</div>
+    <h1>Lançamento <em>Hora a Hora</em></h1>
+  </div>
+  <div class="hdr-info">
+    <div id="hdr-turno">—</div>
+    <div id="hdr-hora">Selecione o turno</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- MAIN WRAPPER -->
+<div class="wrap">
+
+  <!-- ── ETAPA 1: TURNO + HORA ── -->
+  <div id="step-1">
+    <div class="card">
+      <div class="card-title"><span class="icon">🗓</span>Identificação</div>
+
+      <div class="field">
+        <label>Data</label>
+        <input type="date" id="f-date">
+      </div>
+
+      <div class="field">
+        <label>Turno</label>
+        <div class="shift-btns">
+          <div class="shift-btn" onclick="selectShift('AM')">AM</div>
+          <div class="shift-btn" onclick="selectShift('PM')">PM</div>
+          <div class="shift-btn" onclick="selectShift('SD')">SD</div>
+          <div class="shift-btn" onclick="selectShift('CHP')">CHP</div>
+        </div>
+      </div>
+
+      <div class="field" id="brk-field" style="display:none">
+        <label id="brk-label">☕ Horário de intervalo (opcional)</label>
+        <select id="brk-select" onchange="setBrkSlot(this.value)" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;font-weight:600;color:var(--blue);background:#fafafa">
+          <option value="-1">Sem intervalo</option>
+        </select>
+      </div>
+
+      <div class="field" id="hour-field" style="display:none">
+        <label>Hora do lançamento</label>
+        <div class="hour-grid" id="hour-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ETAPA 2: ETIQUETAGEM ── -->
+  <div id="step-2" style="display:none">
+    <div class="card">
+      <div class="card-title"><span class="icon">📦</span>Etiquetagem — <span id="s2-label" style="color:#888;font-weight:600;text-transform:none;letter-spacing:0"></span></div>
+
+      <div class="divider">▸ LINHA / GM</div>
+      <div id="gm-stations"></div>
+
+      <div class="divider">▸ VOLUMOSO</div>
+      <div id="vol-stations"></div>
+    </div>
+  </div>
+
+  <!-- ── ETAPA 3: SORTING ── -->
+  <div id="step-3" style="display:none">
+    <div class="card">
+      <div class="card-title"><span class="icon">🗂</span>Sorting — <span id="s3-label" style="color:#888;font-weight:600;text-transform:none;letter-spacing:0"></span></div>
+
+      <div class="field">
+        <label>Pacotes no Carrinho (No Carrinho)</label>
+        <input type="number" id="f-sort" placeholder="0" inputmode="numeric" min="0">
+      </div>
+
+      <div class="field">
+        <label>Volume Planejado Total (turno)</label>
+        <input type="number" id="f-vol-plan" placeholder="Ex: 22000" inputmode="numeric" min="0">
+        <div style="font-size:11px;color:#aaa;margin-top:4px;">Preencha apenas se mudou. Será aplicado ao turno inteiro.</div>
+      </div>
+
+      <div class="field">
+        <label>Volume Roteirizado Total (turno)</label>
+        <input type="number" id="f-vol-roteir" placeholder="Ex: 18000" inputmode="numeric" min="0">
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ETAPA 4: HC ── -->
+  <div id="step-4" style="display:none">
+    <div class="card">
+      <div class="card-title"><span class="icon">👥</span>HC Presente — <span id="s4-label" style="color:#888;font-weight:600;text-transform:none;letter-spacing:0"></span></div>
+      <div style="font-size:12px;color:#888;font-style:italic;margin-bottom:14px;padding:8px 10px;background:#fff7e6;border-radius:6px;border-left:3px solid #ffa940">
+        📋 Estes dados são válidos para o turno todo e lançados uma vez por dia.
+      </div>
+
+      <div class="divider">COMPOSIÇÃO DO HC</div>
+      <div class="row3">
+        <div class="field">
+          <label>Fixos</label>
+          <input type="number" id="f-hc-fixos" placeholder="0" inputmode="numeric" min="0">
+        </div>
+        <div class="field">
+          <label>Part Time</label>
+          <input type="number" id="f-hc-pt" placeholder="0" inputmode="numeric" min="0">
+        </div>
+        <div class="field">
+          <label>Temporários</label>
+          <input type="number" id="f-hc-temp" placeholder="0" inputmode="numeric" min="0">
+        </div>
+      </div>
+      <div class="row3">
+        <div class="field">
+          <label>Diaristas</label>
+          <input type="number" id="f-hc-diaristas" placeholder="0" inputmode="numeric" min="0">
+        </div>
+        <div class="field">
+          <label>Aus. Justificadas</label>
+          <input type="number" id="f-hc-ausjust" placeholder="0" inputmode="numeric" min="0">
+        </div>
+        <div class="field">
+          <label>Aus. Injustificadas</label>
+          <input type="number" id="f-hc-ausinjust" placeholder="0" inputmode="numeric" min="0">
+        </div>
+      </div>
+
+      <div class="divider">PLANEJAMENTO</div>
+      <div class="field">
+        <label>HC Necessário (planejado)</label>
+        <input type="number" id="f-hc-necessario" placeholder="0" inputmode="numeric" min="0">
+      </div>
+
+      <div style="margin-top:14px;padding:12px;background:#e8f0fe;border-radius:8px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:10px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:.5px">HC Presente Total</div>
+          <div id="hc-calc-total" style="font-size:26px;font-weight:900;color:#003366">—</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:.5px">Total Ausências</div>
+          <div id="hc-calc-ausencias" style="font-size:22px;font-weight:900;color:#cf1322">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ETAPA 5: OCORRÊNCIAS ── -->
+  <div id="step-5" style="display:none">
+    <div class="card">
+      <div class="card-title"><span class="icon">⚠️</span>Ocorrências — <span id="s5-label" style="color:#888;font-weight:600;text-transform:none;letter-spacing:0"></span></div>
+
+      <div class="field">
+        <label>Tipo de ocorrência</label>
+        <select id="f-oco-tipo">
+          <option value="">Nenhuma ocorrência</option>
+          <option value="🔧 Operacional">🔧 Operacional</option>
+          <option value="⚙️ Equipamento">⚙️ Equipamento</option>
+          <option value="💻 Sistema">💻 Sistema</option>
+          <option value="👤 RH/Pessoas">👤 RH/Pessoas</option>
+          <option value="🚛 Line Haul">🚛 Line Haul</option>
+          <option value="🛡 Segurança">🛡 Segurança</option>
+          <option value="✅ Qualidade">✅ Qualidade</option>
+          <option value="📌 Outro">📌 Outro</option>
+        </select>
+      </div>
+      <div class="field" id="oco-desc-wrap">
+        <label>Descrição</label>
+        <textarea id="f-oco-desc" placeholder="Descreva o que aconteceu..."></textarea>
+      </div>
+      <div class="field" id="oco-acao-wrap">
+        <label>Ação Tomada</label>
+        <textarea id="f-oco-acao" placeholder="O que foi feito para resolver..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ETAPA 6: RESUMO ── -->
+  <div id="step-6" style="display:none">
+    <div class="card">
+      <div class="card-title"><span class="icon">✅</span>Resumo do Lançamento</div>
+      <div id="summary-content"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- NAV BUTTONS -->
+<div class="nav" id="nav-bar">
+  <button class="btn btn-back" id="btn-back" onclick="goBack()" style="display:none">← Voltar</button>
+  <button class="btn btn-next" id="btn-next" onclick="goNext()">Próximo →</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  CONSTANTS
+// ═══════════════════════════════════════════════════════
+const SHIFTS=['AM','PM','SD','CHP'];
+const N_GM=5, N_VOL=4, N_HRS=7;
+const DEFS={
+  AM:{start:'01:00',hrs:6,brk:3},
+  PM:{start:'09:00',hrs:4,brk:2},
+  SD:{start:'04:00',hrs:1,brk:-1},
+  CHP:{start:'17:30',hrs:5,brk:2},
+};
+// Horários fixos por turno
+const FIXED_HOURS_BASE = {
+  AM:  ['01:00-02:00','02:00-03:00','03:00-04:00','04:00-05:00','05:00-06:00','06:00-07:00'],
+  SD:  ['04:00-05:00'],
+  CHP: ['17:30-18:30','18:30-19:30','19:00-20:00','20:00-21:00','21:00-21:30'],
+};
+const BREAK_LABEL={AM:'ALMOÇO',PM:'ALMOÇO',CHP:'JANTAR'};
+
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+let S={};
+let curStep=1, curShift=null, curHrIdx=null;
+
+const num=v=>{const n=parseFloat(String(v||0).replace(/,/g,'.'));return isNaN(n)?0:n;};
+
+function loadState(){
+  const raw=localStorage.getItem('rha-v3');
+  if(raw){try{S=JSON.parse(raw);}catch(e){}}
+  SHIFTS.forEach(sh=>{if(!S[sh])S[sh]=mkShift(sh);});
+}
+
+function mkShift(sh){
+  const d=DEFS[sh];
+  return{
+    startLine:d.start,startVol:d.start,endLine:'',numHrs:d.hrs,brkSlot:d.brk,
+    volPlan:0,volRoteir:0,hcNecessario:0,hcFixos:0,hcPT:0,hcTemp:0,hcDiaristas:0,hcAusJust:0,hcAusInjust:0,
+    gmNames:Array.from({length:N_GM},(_,i)=>`Estação ${i+1} Linha`),
+    volNames:Array.from({length:N_VOL},(_,i)=>`Estação ${i+1} Volumoso`),
+    gmData:Array.from({length:N_GM},()=>Array(N_HRS).fill('')),
+    volData:Array.from({length:N_VOL},()=>Array(N_HRS).fill('')),
+    sortData:Array(N_HRS).fill(''),
+    ocoTipo:Array(N_HRS).fill(''),
+    ocoDesc:Array(N_HRS).fill(''),
+    ocoAcao:Array(N_HRS).fill(''),
+  };
+}
+
+function saveState(){
+  localStorage.setItem('rha-v3',JSON.stringify(S));
+}
+
+function showToast(msg,color){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.background=color||'#003366';
+  t.style.display='block';
+  setTimeout(()=>t.style.display='none',2400);
+}
+
+// ═══════════════════════════════════════════════════════
+//  HOURS GENERATOR
+// ═══════════════════════════════════════════════════════
+const isBreak=h=>h==='ALMOÇO'||h.startsWith('ALMOÇO')||h.startsWith('JANTAR');
+
+function getHours(sh){
+  if(FIXED_HOURS_BASE[sh]){
+    return FIXED_HOURS_BASE[sh].map((t,i)=>{
+      if(i===S[sh].brkSlot && BREAK_LABEL[sh]) return BREAK_LABEL[sh]+' ('+t+')';
+      return t;
+    });
+  }
+  // PM: compute dynamically from config
+  const s=S[sh];
+  const [h,m]=s.startLine.split(':').map(Number);
+  return Array.from({length:s.numHrs},(_,i)=>{
+    if(i===s.brkSlot)return BREAK_LABEL[sh]||'ALMOÇO';
+    const sh2=(h+i)%24,eh=(h+i+1)%24,p=x=>String(x).padStart(2,'0');
+    return`${p(sh2)}:${p(m)}-${p(eh)}:${p(m)}`;
+  });
+}
+
+function hasDataForHour(sh,hrIdx){
+  const s=S[sh];
+  const gmFilled=s.gmData.some(r=>num(r[hrIdx])>0);
+  const volFilled=s.volData.some(r=>num(r[hrIdx])>0);
+  const sortFilled=num(s.sortData[hrIdx])>0;
+  return gmFilled||volFilled||sortFilled;
+}
+
+// ═══════════════════════════════════════════════════════
+//  STEP 1: SHIFT + HOUR SELECTION
+// ═══════════════════════════════════════════════════════
+function selectShift(sh){
+  curShift=sh;
+  curHrIdx=null;
+  document.querySelectorAll('.shift-btn').forEach((b,i)=>b.classList.toggle('active',SHIFTS[i]===sh));
+  document.getElementById('hdr-turno').textContent='Turno '+sh;
+  document.getElementById('hdr-hora').textContent='Selecione a hora';
+  // Show break selector if shift has a break label
+  const brkField=document.getElementById('brk-field');
+  const base=FIXED_HOURS_BASE[sh]||(BREAK_LABEL[sh]?(()=>{const s2=S[sh];const [hh,mm]=s2.startLine.split(':').map(Number);return Array.from({length:s2.numHrs},(_,i)=>{const s3=(hh+i)%24,e=(hh+i+1)%24,p=x=>String(x).padStart(2,'0');return`${p(s3)}:${p(mm)}-${p(e)}:${p(mm)}`;});})():null);
+  if(base && BREAK_LABEL[sh]){
+    const lbl=BREAK_LABEL[sh];
+    document.getElementById('brk-label').textContent=(lbl==='JANTAR'?'🍽':'☕')+' Horário do '+lbl+' (opcional)';
+    const sel=document.getElementById('brk-select');
+    sel.innerHTML='<option value="-1">Sem intervalo</option>'+
+      base.map((t,i)=>`<option value="${i}"${S[sh].brkSlot==i?' selected':''}>${t}</option>`).join('');
+    brkField.style.display='block';
+  } else {
+    brkField.style.display='none';
+  }
+  buildHourGrid(sh);
+  document.getElementById('hour-field').style.display='block';
+}
+
+function setBrkSlot(val){
+  if(!curShift)return;
+  S[curShift].brkSlot=+val;
+  saveState();
+  buildHourGrid(curShift);
+}
+
+function buildHourGrid(sh){
+  const hrs=getHours(sh);
+  const grid=document.getElementById('hour-grid');
+  grid.innerHTML=hrs.map((h,i)=>{
+    if(isBreak(h)) return`<div class="hour-btn" style="background:#fff7e6;color:#d46b08;border-color:#ffd591;cursor:default">${h.startsWith('JANTAR')?'🍽':'☕'} ${h}</div>`;
+    const hasDat=hasDataForHour(sh,i);
+    return`<div class="hour-btn ${hasDat?'done':''}" onclick="selectHour(${i},'${h}')">${h}${hasDat?'<span class="dot"></span>':''}</div>`;
+  }).join('');
+}
+
+function selectHour(idx,label){
+  curHrIdx=idx;
+  document.querySelectorAll('.hour-btn').forEach((b,i)=>{
+    if(isBreak(getHours(curShift)[i]))return;
+    const isDone=hasDataForHour(curShift,i);
+    b.classList.toggle('active',i===idx);
+  });
+  document.getElementById('hdr-hora').textContent=label;
+}
+
+// ═══════════════════════════════════════════════════════
+//  STEP 2: ETIQUETAGEM STATIONS
+// ═══════════════════════════════════════════════════════
+function buildStep2(){
+  const s=S[curShift];
+  const hrLabel=getHours(curShift)[curHrIdx];
+  document.getElementById('s2-label').textContent=curShift+' · '+hrLabel;
+
+  // GM stations
+  const gmEl=document.getElementById('gm-stations');
+  gmEl.innerHTML=s.gmNames.map((name,ri)=>`
+    <div class="stn-block">
+      <div class="stn-label">
+        <input class="stn-name" value="${name}" onchange="S['${curShift}'].gmNames[${ri}]=this.value;saveState()" placeholder="Nome da estação">
+      </div>
+      <input class="stn-input ${num(s.gmData[ri][curHrIdx])>0?'has-val':''}" type="number"
+        id="gm-${ri}" value="${s.gmData[ri][curHrIdx]||''}" placeholder="0" inputmode="numeric" min="0"
+        oninput="this.classList.toggle('has-val',this.value>0)">
+    </div>`).join('');
+
+  // Vol stations
+  const volEl=document.getElementById('vol-stations');
+  volEl.innerHTML=s.volNames.map((name,ri)=>`
+    <div class="stn-block">
+      <div class="stn-label">
+        <input class="stn-name" value="${name}" onchange="S['${curShift}'].volNames[${ri}]=this.value;saveState()" placeholder="Nome da estação">
+      </div>
+      <input class="stn-input ${num(s.volData[ri][curHrIdx])>0?'has-val':''}" type="number"
+        id="vol-${ri}" value="${s.volData[ri][curHrIdx]||''}" placeholder="0" inputmode="numeric" min="0"
+        oninput="this.classList.toggle('has-val',this.value>0)">
+    </div>`).join('');
+}
+
+function saveStep2(){
+  const s=S[curShift];
+  for(let i=0;i<N_GM;i++) s.gmData[i][curHrIdx]=num(document.getElementById('gm-'+i)?.value)||'';
+  for(let i=0;i<N_VOL;i++) s.volData[i][curHrIdx]=num(document.getElementById('vol-'+i)?.value)||'';
+}
+
+// ═══════════════════════════════════════════════════════
+//  STEP 3: SORTING
+// ═══════════════════════════════════════════════════════
+function buildStep3(){
+  const s=S[curShift];
+  const hrLabel=getHours(curShift)[curHrIdx];
+  document.getElementById('s3-label').textContent=curShift+' · '+hrLabel;
+  document.getElementById('f-sort').value=s.sortData[curHrIdx]||'';
+  document.getElementById('f-vol-plan').value=s.volPlan||'';
+  document.getElementById('f-vol-roteir').value=s.volRoteir||'';
+}
+
+function saveStep3(){
+  const s=S[curShift];
+  s.sortData[curHrIdx]=num(document.getElementById('f-sort').value)||'';
+  const vp=num(document.getElementById('f-vol-plan').value);
+  const vr=num(document.getElementById('f-vol-roteir').value);
+  if(vp>0)s.volPlan=vp;
+  if(vr>0)s.volRoteir=vr;
+}
+
+// ═══════════════════════════════════════════════════════
+//  STEP 4: HC
+// ═══════════════════════════════════════════════════════
+function calcHCTotal(){
+  const fixos=num(document.getElementById('f-hc-fixos').value);
+  const pt=num(document.getElementById('f-hc-pt').value);
+  const temp=num(document.getElementById('f-hc-temp').value);
+  const diar=num(document.getElementById('f-hc-diaristas').value);
+  const ausj=num(document.getElementById('f-hc-ausjust').value);
+  const ausi=num(document.getElementById('f-hc-ausinjust').value);
+  const total=Math.max(0,fixos+pt+temp+diar-ausj-ausi);
+  const ausTotal=ausj+ausi;
+  document.getElementById('hc-calc-total').textContent=total||'—';
+  document.getElementById('hc-calc-ausencias').textContent=ausTotal||'—';
+  document.getElementById('hc-calc-ausencias').style.color=ausTotal>0?'#cf1322':'#389e0d';
+}
+
+function buildStep4(){
+  const s=S[curShift];
+  document.getElementById('s4-label').textContent=curShift+' — dados do dia';
+  document.getElementById('f-hc-fixos').value=s.hcFixos||'';
+  document.getElementById('f-hc-pt').value=s.hcPT||'';
+  document.getElementById('f-hc-temp').value=s.hcTemp||'';
+  document.getElementById('f-hc-diaristas').value=s.hcDiaristas||'';
+  document.getElementById('f-hc-ausjust').value=s.hcAusJust||'';
+  document.getElementById('f-hc-ausinjust').value=s.hcAusInjust||'';
+  document.getElementById('f-hc-necessario').value=s.hcNecessario||'';
+  calcHCTotal();
+  // Add live calc listeners
+  ['f-hc-fixos','f-hc-pt','f-hc-temp','f-hc-diaristas','f-hc-ausjust','f-hc-ausinjust'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el && !el._hcBound){el.addEventListener('input',calcHCTotal);el._hcBound=true;}
+  });
+}
+
+function saveStep4(){
+  const s=S[curShift];
+  s.hcFixos=num(document.getElementById('f-hc-fixos').value)||s.hcFixos;
+  s.hcPT=num(document.getElementById('f-hc-pt').value)||s.hcPT;
+  s.hcTemp=num(document.getElementById('f-hc-temp').value)||s.hcTemp;
+  s.hcDiaristas=num(document.getElementById('f-hc-diaristas').value)||s.hcDiaristas;
+  s.hcAusJust=num(document.getElementById('f-hc-ausjust').value)||0;
+  s.hcAusInjust=num(document.getElementById('f-hc-ausinjust').value)||0;
+  s.hcNecessario=num(document.getElementById('f-hc-necessario').value)||s.hcNecessario;
+}
+
+// ═══════════════════════════════════════════════════════
+//  STEP 5: OCORRÊNCIAS
+// ═══════════════════════════════════════════════════════
+function buildStep5(){
+  const s=S[curShift];
+  const hrLabel=getHours(curShift)[curHrIdx];
+  document.getElementById('s5-label').textContent=curShift+' · '+hrLabel;
+  document.getElementById('f-oco-tipo').value=s.ocoTipo[curHrIdx]||'';
+  document.getElementById('f-oco-desc').value=s.ocoDesc[curHrIdx]||'';
+  document.getElementById('f-oco-acao').value=s.ocoAcao[curHrIdx]||'';
+}
+
+function saveStep5(){
+  const s=S[curShift];
+  s.ocoTipo[curHrIdx]=document.getElementById('f-oco-tipo').value;
+  s.ocoDesc[curHrIdx]=document.getElementById('f-oco-desc').value;
+  s.ocoAcao[curHrIdx]=document.getElementById('f-oco-acao').value;
+}
+
+// ═══════════════════════════════════════════════════════
+//  STEP 6: SUMMARY
+// ═══════════════════════════════════════════════════════
+function buildStep6(){
+  const s=S[curShift];
+  const hrLabel=getHours(curShift)[curHrIdx];
+  const gmTot=s.gmData.reduce((a,r)=>a+num(r[curHrIdx]),0);
+  const volTot=s.volData.reduce((a,r)=>a+num(r[curHrIdx]),0);
+  const sortVal=num(s.sortData[curHrIdx]);
+  const hcTotal=Math.max(0,num(s.hcFixos)+num(s.hcPT)+num(s.hcTemp)+num(s.hcDiaristas)-num(s.hcAusJust)-num(s.hcAusInjust));
+  const ocoTipo=s.ocoTipo[curHrIdx];
+
+  const row=(label,val,unit='')=>`
+    <div class="summary-row">
+      <span class="summary-label">${label}</span>
+      <span class="summary-val ${val===0?'zero':''}">${val===0?'—':val.toLocaleString('pt-BR')+(unit?' '+unit:'')}</span>
+    </div>`;
+
+  document.getElementById('summary-content').innerHTML=`
+    <div style="background:#e8f0fe;border-radius:8px;padding:12px 14px;margin-bottom:14px;text-align:center;">
+      <div style="font-size:11px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:.5px">Turno · Hora</div>
+      <div style="font-size:20px;font-weight:900;color:var(--blue);margin-top:4px">${curShift} · ${hrLabel}</div>
+    </div>
+    ${row('GM (Linha) — Total',gmTot,'pcts')}
+    ${row('Volumoso — Total',volTot,'pcts')}
+    ${row('Etiquetagem Total',gmTot+volTot,'pcts')}
+    ${row('Sorting (No Carrinho)',sortVal,'pcts')}
+    ${row('HC Presente Total',hcTotal)}
+    <div class="summary-row">
+      <span class="summary-label">Fixos / PT / Temp / Diaristas</span>
+      <span class="summary-val" style="font-size:13px">${num(s.hcFixos)} / ${num(s.hcPT)} / ${num(s.hcTemp)} / ${num(s.hcDiaristas)}</span>
+    </div>
+    <div class="summary-row">
+      <span class="summary-label">Ausências (Just. / Injust.)</span>
+      <span class="summary-val" style="font-size:13px;color:${(num(s.hcAusJust)+num(s.hcAusInjust))>0?'#cf1322':'#389e0d'}">${num(s.hcAusJust)} / ${num(s.hcAusInjust)}</span>
+    </div>
+    <div class="summary-row">
+      <span class="summary-label">Ocorrência</span>
+      <span class="summary-val" style="font-size:13px">${ocoTipo||'—'}</span>
+    </div>
+    <div style="margin-top:14px;padding:12px;background:#f6ffed;border-radius:8px;border:1px solid #b7eb8f;text-align:center;">
+      <div style="font-size:13px;font-weight:700;color:#389e0d">✅ Tudo pronto para salvar!</div>
+      <div style="font-size:11px;color:#888;margin-top:3px">Os dados serão atualizados no dashboard gerencial.</div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════════
+function showStep(n){
+  for(let i=1;i<=6;i++) document.getElementById('step-'+i).style.display=i===n?'block':'none';
+  document.getElementById('btn-back').style.display=n>1?'flex':'none';
+  const nextBtn=document.getElementById('btn-next');
+  if(n===6){
+    nextBtn.textContent='💾 Salvar Lançamento';
+    nextBtn.className='btn btn-save';
+  } else {
+    nextBtn.textContent=n<5?'Próximo →':'Revisar';
+    nextBtn.className='btn btn-next';
+  }
+  curStep=n;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function goNext(){
+  if(curStep===1){
+    if(!curShift){showToast('Selecione o turno','#cf1322');return;}
+    if(curHrIdx===null){showToast('Selecione a hora','#cf1322');return;}
+    showStep(2); buildStep2(); return;
+  }
+  if(curStep===2){saveStep2();showStep(3);buildStep3();return;}
+  if(curStep===3){saveStep3();showStep(4);buildStep4();return;}
+  if(curStep===4){saveStep4();showStep(5);buildStep5();return;}
+  if(curStep===5){saveStep5();showStep(6);buildStep6();return;}
+  if(curStep===6){
+    saveState();
+    showToast('✅ Lançamento salvo!','#389e0d');
+    // rebuild hour grid to show dot on saved hour
+    setTimeout(()=>{
+      buildHourGrid(curShift);
+      curHrIdx=null;
+      document.getElementById('hdr-hora').textContent='Selecione a hora';
+      showStep(1);
+    },1600);
+    return;
+  }
+}
+
+function goBack(){
+  if(curStep===2){showStep(1);return;}
+  if(curStep===3){showStep(2);buildStep2();return;}
+  if(curStep===4){showStep(3);buildStep3();return;}
+  if(curStep===5){showStep(4);buildStep4();return;}
+  if(curStep===6){showStep(5);buildStep5();return;}
+}
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+loadState();
+document.getElementById('f-date').value=localStorage.getItem('rha-date')||new Date().toISOString().slice(0,10);
+document.getElementById('f-date').addEventListener('change',function(){
+  localStorage.setItem('rha-date',this.value);
+});
+showStep(1);
+</script>
+</body>
+</html>
