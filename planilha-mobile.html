@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>SMG1 — Lançamento</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--blk:#1a1a1a;--yel:#f5c800;--grn:#52c41a;--red:#ff4d4f;--bg:#f4f6fb;--card:#fff;--border:#e0e0e0;--sub:#888}
+html,body{height:100%;background:var(--bg);font-family:'Segoe UI',system-ui,sans-serif;color:#222;font-size:15px}
+input,select,textarea{font-size:16px!important;font-family:inherit}
+
+/* HEADER */
+.hdr{background:var(--blk);color:#fff;height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.badge{background:var(--yel);color:var(--blk);font-weight:900;font-size:11px;padding:4px 8px;border-radius:5px;white-space:nowrap}
+.hdr h1{font-size:14px;font-weight:800;color:#fff}
+.hdr h1 em{color:var(--yel);font-style:normal}
+.hdr-right{font-size:12px;font-weight:800}
+
+/* PROGRESS */
+.prog{height:4px;background:#333;position:sticky;top:54px;z-index:99}
+.prog-fill{height:100%;background:var(--yel);transition:width .3s}
+
+/* STEPS */
+.steps{display:flex;gap:5px;padding:14px 14px 0}
+.step-dot{flex:1;height:6px;border-radius:3px;background:#ddd;transition:background .2s}
+.step-dot.done{background:var(--grn)}
+.step-dot.active{background:var(--yel)}
+
+/* MAIN */
+.main{padding:12px 14px 90px}
+
+/* CARD */
+.card{background:var(--card);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px rgba(0,0,0,.07)}
+.card-title{font-size:14px;font-weight:900;color:var(--blk);display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--yel)}
+
+/* SHIFT TILES */
+.shift-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px}
+.shift-tile{padding:20px 10px;border:3px solid var(--border);border-radius:14px;background:#f8f9fa;font-size:24px;font-weight:900;color:#333;text-align:center;cursor:pointer;transition:all .2s;user-select:none}
+.shift-tile.active{background:var(--blk);color:var(--yel);border-color:var(--blk)}
+.shift-tile .sub{font-size:10px;font-weight:600;margin-top:3px;opacity:.6}
+
+/* FIELD */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--sub);margin-bottom:6px}
+.field input,.field select{width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;background:#fff;color:#222;-webkit-appearance:none;transition:border-color .15s}
+.field input:focus,.field select:focus{outline:none;border-color:var(--yel)}
+.field input[type=number]{font-size:22px!important;font-weight:800;text-align:center;color:var(--blk)}
+
+/* ROW */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+
+/* STATION INPUT */
+.stn-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0f0f0}
+.stn-row:last-child{border-bottom:none}
+.stn-name{flex:1}
+.stn-name-lbl{font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.4px}
+.stn-name-inp{font-size:13px!important;font-weight:700;color:#444;border:none;background:transparent;width:100%;padding:2px 0}
+.stn-num{width:88px;padding:10px 6px;border:2px solid var(--border);border-radius:10px;font-size:20px!important;font-weight:900;text-align:center;color:var(--blk);-webkit-appearance:none;transition:border-color .15s}
+.stn-num:focus{outline:none;border-color:var(--yel)}
+.stn-num.has-val{border-color:var(--grn);background:#f6ffed}
+
+/* HC */
+.hc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.hc-item label{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--sub);margin-bottom:6px}
+.hc-item input{width:100%;padding:12px 8px;border:2px solid var(--border);border-radius:10px;font-size:20px!important;font-weight:800;text-align:center;color:var(--blk);-webkit-appearance:none}
+.hc-item input:focus{outline:none;border-color:var(--yel)}
+.hc-total{background:var(--blk);border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.hc-total .lbl{font-size:10px;font-weight:800;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.4px}
+.hc-total .val{font-size:26px;font-weight:900;color:var(--yel)}
+.hc-total .abs .val{font-size:20px;color:#ff7875}
+
+/* SECTION LABEL */
+.sec-lbl{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.8px;color:#7a5800;background:#fffbe6;padding:5px 10px;border-radius:6px;margin:14px 0 10px;display:block}
+
+/* HORA GRID */
+.hora-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hora-tile{padding:14px 8px;border:2px solid var(--border);border-radius:12px;background:#fff;font-size:13px;font-weight:700;color:#888;text-align:center;cursor:pointer;transition:all .15s;position:relative;user-select:none}
+.hora-tile.active{background:var(--blk);color:var(--yel);border-color:var(--blk)}
+.hora-tile.done{border-color:var(--grn);color:var(--grn)}
+.hora-tile.brk{background:#fff8e6;color:#d46b08;border-color:#ffd591;cursor:default;font-size:12px}
+.hora-tile .dot{position:absolute;top:5px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--grn)}
+
+/* SUMMARY */
+.sum-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:#f8f9ff;border:1px solid #e0e8ff;margin-bottom:8px}
+.sum-lbl{font-size:13px;font-weight:700;color:#555}
+.sum-val{font-size:18px;font-weight:900;color:var(--blk)}
+.sum-val.zero{color:#ccc}
+
+/* INFO BOX */
+.info-box{background:#fffbe6;border:1px solid #ffe066;border-radius:10px;padding:10px 14px;font-size:12px;color:#7a5800;margin-bottom:14px;line-height:1.6}
+
+/* NAV */
+.nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid var(--border);padding:12px 16px;display:flex;gap:10px;z-index:100}
+.btn{flex:1;padding:16px;border:none;border-radius:12px;font-size:16px;font-weight:900;cursor:pointer;font-family:inherit}
+.btn:active{transform:scale(.97)}
+.btn-back{background:#f0f0f0;color:#666}
+.btn-next{background:var(--blk);color:var(--yel)}
+.btn-save{background:var(--grn);color:#fff}
+
+/* TOAST */
+#toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:var(--blk);color:var(--yel);padding:10px 20px;border-radius:8px;font-size:13px;font-weight:800;display:none;z-index:999;white-space:nowrap}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<div class="hdr">
+  <div style="display:flex;align-items:center;gap:10px">
+    <a href="planilha-online.html" style="text-decoration:none">
+      <div class="badge" style="display:flex;align-items:center;gap:4px">📊 SMG1</div>
+    </a>
+    <h1>Lançamento <em>Operacional</em></h1>
+  </div>
+  <span id="fb-dot" style="font-size:13px" title="Status Firebase">⚫</span>
+</div>
+<div class="prog"><div class="prog-fill" id="prog-fill" style="width:14%"></div></div>
+
+<div class="steps" id="step-dots"></div>
+<div class="main" id="main-content">
+
+  <!-- STEP 1: TURNO -->
+  <div id="step-1">
+    <div class="card">
+      <div class="card-title">🗓 Turno e Data</div>
+      <div class="shift-grid" id="shift-grid">
+        <div class="shift-tile" id="tile-AM" onclick="selectShift('AM')">AM<div class="sub">02:00–07:00</div></div>
+        <div class="shift-tile" id="tile-PM" onclick="selectShift('PM')">PM<div class="sub">10:00–14:00</div></div>
+        <div class="shift-tile" id="tile-SD" onclick="selectShift('SD')">SD<div class="sub">04:00–05:00</div></div>
+        <div class="shift-tile" id="tile-CHP" onclick="selectShift('CHP')">CHP<div class="sub">18:30–21:30</div></div>
+      </div>
+      <div class="field" style="margin-top:14px"><label>Data</label>
+        <input type="date" id="f-data"></div>
+      <div class="row2">
+        <div class="field"><label>Início Linha</label><input type="time" id="f-ini-linha"></div>
+        <div class="field"><label>Início Volumoso</label><input type="time" id="f-ini-vol"></div>
+        <div class="field"><label>Hora Final</label><input type="time" id="f-hora-final"></div>
+        <div class="field"><label>Tempo de Ops (h)</label><input type="number" id="f-tempo-ops" placeholder="0" inputmode="numeric"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: VOLUME -->
+  <div id="step-2" style="display:none">
+    <div class="info-box">📦 Volume do turno — lançar uma vez por dia</div>
+    <div class="card">
+      <div class="card-title">📦 Volumes</div>
+      <div class="field"><label>Vol. Planejado</label><input type="number" id="f-vol-plan" placeholder="0" inputmode="numeric"></div>
+      <div class="field"><label>Vol. Processados</label><input type="number" id="f-vol-proc" placeholder="0" inputmode="numeric"></div>
+      <div class="field"><label>Vol. Roteirizado</label><input type="number" id="f-vol-rot" placeholder="0" inputmode="numeric"></div>
+    </div>
+  </div>
+
+  <!-- STEP 3: HORA SELEÇÃO -->
+  <div id="step-3" style="display:none">
+    <div class="card">
+      <div class="card-title">🕐 Hora do lançamento</div>
+      <div class="hora-grid" id="hora-grid"></div>
+    </div>
+  </div>
+
+  <!-- STEP 4: ETIQUETAGEM -->
+  <div id="step-4" style="display:none">
+    <div class="card">
+      <div class="card-title">📦 Etiquetagem — <span id="lbl-hora" style="color:#888;font-weight:500;text-transform:none;letter-spacing:0;font-size:13px"></span></div>
+      <span class="sec-lbl">▸ LINHA / GM</span>
+      <div id="stn-linha"></div>
+      <span class="sec-lbl">▸ VOLUMOSO</span>
+      <div id="stn-vol"></div>
+    </div>
+  </div>
+
+  <!-- STEP 5: SORTING -->
+  <div id="step-5" style="display:none">
+    <div class="card">
+      <div class="card-title">🗂 Sorting — No Carrinho</div>
+      <div style="padding:8px 0">
+        <div class="stn-name-lbl">Qtd. no carrinho nesta hora</div>
+        <input type="number" id="f-sort" inputmode="numeric" placeholder="0"
+          style="width:100%;margin-top:8px;padding:16px;border:2px solid var(--border);border-radius:12px;font-size:28px!important;font-weight:900;text-align:center;color:var(--blk);-webkit-appearance:none">
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 6: HC -->
+  <div id="step-6" style="display:none">
+    <div class="info-box">👥 HC válido para o turno todo — lançar uma vez por dia</div>
+    <div class="card">
+      <div class="card-title">👥 HC — Composição</div>
+      <div class="hc-grid">
+        <div class="hc-item"><label>Fixos</label><input type="number" id="hc-fixos" inputmode="numeric" placeholder="0" oninput="calcHC()"></div>
+        <div class="hc-item"><label>Part Time</label><input type="number" id="hc-pt" inputmode="numeric" placeholder="0" oninput="calcHC()"></div>
+        <div class="hc-item"><label>Temporários</label><input type="number" id="hc-temp" inputmode="numeric" placeholder="0" oninput="calcHC()"></div>
+        <div class="hc-item"><label>Diaristas</label><input type="number" id="hc-diar" inputmode="numeric" placeholder="0" oninput="calcHC()"></div>
+        <div class="hc-item"><label>Aus. Justif.</label><input type="number" id="hc-ausj" inputmode="numeric" placeholder="0" oninput="calcHC()"></div>
+        <div class="hc-item"><label>Aus. Injustif.</label><input type="number" id="hc-ausi" inputmode="numeric" placeholder="0" oninput="calcHC()"></div>
+        <div class="hc-item"><label>HC Necessário</label><input type="number" id="hc-nec" inputmode="numeric" placeholder="0"></div>
+      </div>
+      <div class="hc-total">
+        <div><div class="lbl">HC Presente Total</div><div class="val" id="hc-tot-val">—</div></div>
+        <div class="abs" style="text-align:right"><div class="lbl">Ausências</div><div class="val abs" id="hc-aus-val">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 7: RESUMO -->
+  <div id="step-7" style="display:none">
+    <div class="card">
+      <div class="card-title">✅ Resumo</div>
+      <div id="resumo-content"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="nav">
+  <button class="btn btn-back" id="btn-back" onclick="goBack()" style="display:none">← Voltar</button>
+  <button class="btn btn-next" id="btn-next" onclick="goNext()">Avançar →</button>
+</div>
+
+<script>
+// ── FIREBASE ──
+const FB={apiKey:"AIzaSyC48VRl8d3v6SAA2nDp3m1iJCXx2GNHLO0",authDomain:"smg1-contagem-2026.firebaseapp.com",databaseURL:"https://smg1-contagem-2026-default-rtdb.firebaseio.com",projectId:"smg1-contagem-2026",storageBucket:"smg1-contagem-2026.firebasestorage.app",messagingSenderId:"845783097839",appId:"1:845783097839:web:20a5ff6aa4655342a5161a"};
+let db=null;
+function initFB(){
+  try{firebase.app();}catch(e){firebase.initializeApp(FB);}
+  db=firebase.database();
+  document.getElementById('fb-dot').textContent='🟢';
+}
+function saveState(){
+  localStorage.setItem('planilha-op',JSON.stringify(S));
+  if(db)db.ref('planilha-op').set(S).catch(()=>{document.getElementById('fb-dot').textContent='🔴';});
+}
+
+// ── STATE ──
+const SHIFTS=['AM','PM','SD','CHP'];
+const SHIFT_HOURS={
+  AM:['02:00','03:00','04:00','☕ ALMOÇO','05:00','06:00','07:00'],
+  PM:['10:00','11:00','12:00','🍽 ALMOÇO','13:00','14:00'],
+  SD:['04:00','05:00'],
+  CHP:['18:30','19:30','🍽 JANTAR','20:30','21:30']
+};
+const N_STN_LINE=4, N_STN_VOL=3;
+const isBreak=h=>h.startsWith('☕')||h.startsWith('🍽');
+const num=v=>{const n=parseFloat(String(v||0).replace(/,/g,'.'));return isNaN(n)?0:n;};
+const fmt=n=>Math.round(n).toLocaleString('pt-BR');
+let S={}, curShift=null, curHora=null, curStep=1;
+const N_STEPS=7;
+
+function mkShift(sh){
+  const hrs=SHIFT_HOURS[sh];
+  return{
+    date:new Date().toISOString().slice(0,10),
+    inicioLinha:'',inicioVol:'',horaFinal:'',tempoOps:'',
+    volPlan:0,volProcess:0,volRoteir:0,
+    hcNecessario:0,hcFixos:0,hcPT:0,hcTemp:0,hcDiaristas:0,hcAusJust:0,hcAusInjust:0,
+    stnLineNames:Array.from({length:N_STN_LINE},(_,i)=>`Estação ${i+1} Linha`),
+    stnVolNames:Array.from({length:N_STN_VOL},(_,i)=>`Estação ${i+1} Volumoso`),
+    stnLineData:Array.from({length:N_STN_LINE},()=>Array(hrs.length).fill('')),
+    stnVolData:Array.from({length:N_STN_VOL},()=>Array(hrs.length).fill('')),
+    sortData:Array(hrs.length).fill(''),
+  };
+}
+
+function loadState(){
+  try{S=JSON.parse(localStorage.getItem('planilha-op')||'{}');}catch(e){}
+  SHIFTS.forEach(sh=>{if(!S[sh])S[sh]=mkShift(sh);});
+}
+
+function hasData(sh,ci){
+  const s=S[sh];
+  return s.stnLineData.some(r=>num(r[ci])>0)||s.stnVolData.some(r=>num(r[ci])>0)||num(s.sortData[ci])>0;
+}
+
+// ── SHIFT SELECTION ──
+function selectShift(sh){
+  curShift=sh; curHora=null;
+  SHIFTS.forEach(s=>{
+    const el=document.getElementById('tile-'+s);
+    if(el)el.className='shift-tile'+(s===sh?' active':'');
+  });
+}
+
+// ── HORA GRID ──
+function buildHoraGrid(){
+  if(!curShift)return;
+  const hrs=SHIFT_HOURS[curShift];
+  document.getElementById('hora-grid').innerHTML=hrs.map((h,i)=>{
+    if(isBreak(h))return`<div class="hora-tile brk">${h}</div>`;
+    const done=hasData(curShift,i);
+    return`<div class="hora-tile ${done?'done':''} ${curHora===i?'active':''}" onclick="selectHora(${i},'${h}')">
+      ${h}${done?'<span class="dot"></span>':''}
+    </div>`;
+  }).join('');
+}
+
+function selectHora(idx,label){
+  curHora=idx;
+  document.getElementById('lbl-hora').textContent=curShift+' · '+label;
+  buildHoraGrid();
+}
+
+// ── BUILD STEPS ──
+function buildStep4(){
+  if(!curShift||curHora===null)return;
+  const s=S[curShift];
+  const makeRows=(names,data,prefix,idPfx)=>names.map((name,ri)=>`
+    <div class="stn-row">
+      <div class="stn-name">
+        <div class="stn-name-lbl">${prefix} ${ri+1}</div>
+        <input class="stn-name-inp" value="${name}" onchange="S['${curShift}'].${data}Names[${ri}]=this.value;saveState()">
+      </div>
+      <input type="number" inputmode="numeric" class="stn-num ${num(s[data+'Data'][ri][curHora])>0?'has-val':''}"
+        value="${s[data+'Data'][ri][curHora]||''}" placeholder="0"
+        onchange="S['${curShift}'].${data}Data[${ri}][${curHora}]=+this.value||'';saveState();this.classList.toggle('has-val',+this.value>0)">
+    </div>`).join('');
+  document.getElementById('stn-linha').innerHTML=makeRows(s.stnLineNames,'stnLine','Linha','l');
+  document.getElementById('stn-vol').innerHTML=makeRows(s.stnVolNames,'stnVol','Volumoso','v');
+}
+
+function buildStep5(){
+  if(!curShift||curHora===null)return;
+  document.getElementById('f-sort').value=S[curShift].sortData[curHora]||'';
+}
+
+function buildStep6(){
+  if(!curShift)return;
+  const s=S[curShift];
+  document.getElementById('hc-fixos').value=s.hcFixos||'';
+  document.getElementById('hc-pt').value=s.hcPT||'';
+  document.getElementById('hc-temp').value=s.hcTemp||'';
+  document.getElementById('hc-diar').value=s.hcDiaristas||'';
+  document.getElementById('hc-ausj').value=s.hcAusJust||'';
+  document.getElementById('hc-ausi').value=s.hcAusInjust||'';
+  document.getElementById('hc-nec').value=s.hcNecessario||'';
+  calcHC();
+}
+
+function calcHC(){
+  const f=num(document.getElementById('hc-fixos').value);
+  const pt=num(document.getElementById('hc-pt').value);
+  const tm=num(document.getElementById('hc-temp').value);
+  const di=num(document.getElementById('hc-diar').value);
+  const aj=num(document.getElementById('hc-ausj').value);
+  const ai=num(document.getElementById('hc-ausi').value);
+  const tot=Math.max(0,f+pt+tm+di-aj-ai);
+  const aus=aj+ai;
+  document.getElementById('hc-tot-val').textContent=tot||'—';
+  document.getElementById('hc-aus-val').textContent=aus||'—';
+  document.getElementById('hc-aus-val').style.color=aus>0?'#ff7875':'#52c41a';
+}
+
+function buildStep7(){
+  if(!curShift||curHora===null)return;
+  const s=S[curShift];
+  const hrs=SHIFT_HOURS[curShift];
+  const hrLabel=hrs[curHora]||'—';
+  const gmTot=s.stnLineData.reduce((a,r)=>a+num(r[curHora]),0);
+  const volTot=s.stnVolData.reduce((a,r)=>a+num(r[curHora]),0);
+  const sortVal=num(s.sortData[curHora]);
+  const hcTot=Math.max(0,num(s.hcFixos)+num(s.hcPT)+num(s.hcTemp)+num(s.hcDiaristas)-num(s.hcAusJust)-num(s.hcAusInjust));
+  const volPlan=num(s.volPlan),volRot=num(s.volRoteir);
+  const row=(lbl,val,unit='')=>`<div class="sum-row"><span class="sum-lbl">${lbl}</span><span class="sum-val ${val===0?'zero':''}">${val===0?'—':fmt(val)+(unit?' '+unit:'')}</span></div>`;
+  document.getElementById('resumo-content').innerHTML=`
+    <div style="background:var(--blk);border-radius:10px;padding:14px;text-align:center;margin-bottom:14px">
+      <div style="font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;font-weight:800">Turno · Hora</div>
+      <div style="font-size:20px;font-weight:900;color:var(--yel);margin-top:4px">${curShift} · ${hrLabel}</div>
+    </div>
+    ${row('Vol. Planejado',volPlan,'pcts')}
+    ${row('Vol. Roteirizado',volRot,'pcts')}
+    ${row('GM Linha',gmTot,'pcts')}
+    ${row('Volumoso',volTot,'pcts')}
+    ${row('Etiquetagem Total',gmTot+volTot,'pcts')}
+    ${row('Sorting (No Carrinho)',sortVal,'pcts')}
+    ${row('HC Presente Total',hcTot)}
+    <div style="margin-top:14px;padding:12px;background:#f6ffed;border-radius:10px;border:1px solid #b7eb8f;text-align:center">
+      <div style="font-size:14px;font-weight:900;color:#389e0d">✅ Pronto para salvar!</div>
+    </div>`;
+}
+
+// ── SAVE STEPS ──
+function saveStep1(){
+  if(!curShift)return;
+  const s=S[curShift];
+  s.date=document.getElementById('f-data').value||s.date;
+  s.inicioLinha=document.getElementById('f-ini-linha').value;
+  s.inicioVol=document.getElementById('f-ini-vol').value;
+  s.horaFinal=document.getElementById('f-hora-final').value;
+  s.tempoOps=document.getElementById('f-tempo-ops').value;
+}
+function saveStep2(){
+  if(!curShift)return;
+  const s=S[curShift];
+  s.volPlan=num(document.getElementById('f-vol-plan').value)||s.volPlan;
+  s.volProcess=num(document.getElementById('f-vol-proc').value)||s.volProcess;
+  s.volRoteir=num(document.getElementById('f-vol-rot').value)||s.volRoteir;
+}
+function saveStep5(){
+  if(!curShift||curHora===null)return;
+  S[curShift].sortData[curHora]=num(document.getElementById('f-sort').value)||'';
+}
+function saveStep6(){
+  if(!curShift)return;
+  const s=S[curShift];
+  s.hcFixos=num(document.getElementById('hc-fixos').value)||s.hcFixos;
+  s.hcPT=num(document.getElementById('hc-pt').value)||s.hcPT;
+  s.hcTemp=num(document.getElementById('hc-temp').value)||s.hcTemp;
+  s.hcDiaristas=num(document.getElementById('hc-diar').value)||s.hcDiaristas;
+  s.hcAusJust=num(document.getElementById('hc-ausj').value)||0;
+  s.hcAusInjust=num(document.getElementById('hc-ausi').value)||0;
+  s.hcNecessario=num(document.getElementById('hc-nec').value)||s.hcNecessario;
+}
+
+// ── NAVIGATION ──
+function validate(){
+  if(curStep===1){
+    if(!curShift){showToast('Selecione o turno','#cf1322');return false;}
+  }
+  if(curStep===3){
+    if(curHora===null){showToast('Selecione a hora','#cf1322');return false;}
+  }
+  return true;
+}
+
+function goNext(){
+  if(!validate())return;
+  if(curStep===1)saveStep1();
+  else if(curStep===2)saveStep2();
+  else if(curStep===5)saveStep5();
+  else if(curStep===6)saveStep6();
+
+  if(curStep===N_STEPS){
+    saveState();
+    showToast('✅ Dados salvos!','#389e0d');
+    setTimeout(()=>{curStep=1;curHora=null;updateUI();},1500);
+    return;
+  }
+  curStep++;
+  window.scrollTo({top:0,behavior:'smooth'});
+  updateUI();
+}
+function goBack(){
+  if(curStep>1){curStep--;window.scrollTo({top:0,behavior:'smooth'});updateUI();}
+}
+
+function updateUI(){
+  // Dots
+  document.getElementById('step-dots').innerHTML=Array.from({length:N_STEPS},(_,i)=>{
+    const cls=i+1<curStep?'done':i+1===curStep?'active':'';
+    return`<div class="step-dot ${cls}"></div>`;
+  }).join('');
+
+  document.getElementById('prog-fill').style.width=(curStep/N_STEPS*100)+'%';
+  document.getElementById('btn-back').style.display=curStep===1?'none':'block';
+  const nb=document.getElementById('btn-next');
+  if(curStep===N_STEPS){nb.textContent='💾 Salvar';nb.className='btn btn-save';}
+  else{nb.textContent='Avançar →';nb.className='btn btn-next';}
+
+  for(let i=1;i<=N_STEPS;i++)document.getElementById('step-'+i).style.display=i===curStep?'block':'none';
+
+  // Preencher campos ao entrar na etapa
+  if(curStep===2 && curShift){
+    const s=S[curShift];
+    document.getElementById('f-vol-plan').value=s.volPlan||'';
+    document.getElementById('f-vol-proc').value=s.volProcess||'';
+    document.getElementById('f-vol-rot').value=s.volRoteir||'';
+  }
+  if(curStep===1 && curShift){
+    const s=S[curShift];
+    document.getElementById('f-data').value=s.date||new Date().toISOString().slice(0,10);
+    document.getElementById('f-ini-linha').value=s.inicioLinha||'';
+    document.getElementById('f-ini-vol').value=s.inicioVol||'';
+    document.getElementById('f-hora-final').value=s.horaFinal||'';
+    document.getElementById('f-tempo-ops').value=s.tempoOps||'';
+  }
+  if(curStep===3)buildHoraGrid();
+  else if(curStep===4)buildStep4();
+  else if(curStep===5)buildStep5();
+  else if(curStep===6)buildStep6();
+  else if(curStep===7)buildStep7();
+}
+
+function showToast(msg,color){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.background=color||'#1a1a1a';
+  t.style.color=color&&color!=='#1a1a1a'?'#fff':'var(--yel)';
+  t.style.display='block';
+  setTimeout(()=>t.style.display='none',2200);
+}
+
+// BOOT
+loadState();
+document.getElementById('f-data').value=new Date().toISOString().slice(0,10);
+updateUI();
+try{initFB();}catch(e){document.getElementById('fb-dot').textContent='🔴';}
+</script>
+</body>
+</html>
