@@ -13,7 +13,7 @@
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:#222;font-size:13px}
 
 /* HEADER */
-.hdr{background:var(--blk);color:#fff;padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.hdr{background:var(--blk);color:#fff;padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 4px rgba(0,0,0,.2)}
 .hdr-left{display:flex;align-items:center;gap:12px}
 .badge{background:var(--yel);color:var(--blk);font-weight:900;font-size:11px;padding:4px 8px;border-radius:5px}
 .hdr h1{font-size:15px;font-weight:800;color:#fff}
@@ -24,8 +24,19 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:#222
 .btn-hdr:hover{background:#ffe033}
 .btn-ghost{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer}
 
+
+/* INFO BAR — faixa abaixo do header */
+.info-bar{background:#222;color:#fff;padding:8px 20px;position:sticky;top:52px;z-index:99;display:flex;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.info-bar-item{display:flex;flex-direction:column;gap:2px;min-width:90px}
+.info-bar-item label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.45)}
+.info-bar-item input,.info-bar-item select{background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.25);color:#fff;font-size:13px;font-weight:700;font-family:inherit;padding:2px 0;width:100%;min-width:80px}
+.info-bar-item input:focus,.info-bar-item select:focus{outline:none;border-bottom-color:var(--yel)}
+.info-bar-item input::placeholder{color:rgba(255,255,255,.3)}
+.info-bar-sep{width:1px;height:36px;background:rgba(255,255,255,.15);flex-shrink:0}
+@media(max-width:768px){.info-bar{top:52px;gap:10px;padding:8px 12px}.info-bar-item{min-width:70px}}
+
 /* SHIFT TABS */
-.tabs{background:#fff;border-bottom:2px solid var(--border);display:flex;padding:0 20px;gap:4px}
+.tabs{background:#fff;border-bottom:2px solid var(--border);display:flex;padding:0 20px;gap:4px;position:sticky;top:106px;z-index:98}
 .tab{padding:10px 24px;cursor:pointer;border:none;background:transparent;font-size:13px;font-weight:800;color:#999;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s}
 .tab.active{color:var(--blk);border-bottom-color:var(--yel)}
 
@@ -144,6 +155,7 @@ tr.pct td{background:#f6f8ff;font-weight:700}
   </div>
 </div>
 
+<div class="info-bar" id="info-bar"></div>
 <div class="tabs" id="tabs"></div>
 <div class="content" id="content"></div>
 
@@ -161,7 +173,7 @@ function initFB(){
     if(JSON.stringify(remote)===JSON.stringify(S))return;
     S=remote;
     ensureShifts();
-    render();
+    renderInfoBar();render();
     setTimeout(renderCharts,100);
     toast('🔄 Atualizado em tempo real');
   });
@@ -238,13 +250,40 @@ function calc(sh){
 }
 
 // ── RENDER ──
+
+function renderInfoBar(){
+  const sh=curShift; const s=S[sh];
+  document.getElementById('info-bar').innerHTML=`
+    <div class="info-bar-item"><label>Turno</label><span style="font-size:15px;font-weight:900;color:var(--yel)">${sh}</span></div>
+    <div class="info-bar-sep"></div>
+    <div class="info-bar-item"><label>Data</label>
+      <input type="date" value="${s.date}" onchange="S['${sh}'].date=this.value;save()"></div>
+    <div class="info-bar-item"><label>Início Linha</label>
+      <input type="time" value="${s.inicioLinha}" onchange="S['${sh}'].inicioLinha=this.value;save()"></div>
+    <div class="info-bar-item"><label>Início Volumoso</label>
+      <input type="time" value="${s.inicioVol}" onchange="S['${sh}'].inicioVol=this.value;save()"></div>
+    <div class="info-bar-item"><label>Hora Final</label>
+      <input type="time" value="${s.horaFinal}" onchange="S['${sh}'].horaFinal=this.value;save()"></div>
+    <div class="info-bar-sep"></div>
+    <div class="info-bar-item"><label>Vol. Planejado</label>
+      <input type="number" value="${s.volPlan||''}" placeholder="0" onchange="S['${sh}'].volPlan=+this.value;save();renderContent();renderCharts()"></div>
+    <div class="info-bar-item"><label>Vol. Processados</label>
+      <input type="number" value="${s.volProcess||''}" placeholder="0" onchange="S['${sh}'].volProcess=+this.value;save();renderContent()"></div>
+    <div class="info-bar-item"><label>Vol. Roteirizado</label>
+      <input type="number" value="${s.volRoteir||''}" placeholder="0" onchange="S['${sh}'].volRoteir=+this.value;save();renderContent();renderCharts()"></div>
+    <div class="info-bar-sep"></div>
+    <div class="info-bar-item"><label>Observações</label>
+      <input type="text" value="${s.obs||''}" placeholder="Obs..." onchange="S['${sh}'].obs=this.value;save()"></div>
+  `;
+}
+
 function renderTabs(){
   document.getElementById('tabs').innerHTML=SHIFTS.map(sh=>
     `<button class="tab ${sh===curShift?'active':''}" onclick="curShift='${sh}';renderAll()">${sh}</button>`
   ).join('');
 }
 
-function renderAll(){renderTabs();renderContent();if(typeof renderCharts!=='undefined')setTimeout(renderCharts,100);}
+function renderAll(){renderInfoBar();renderTabs();renderContent();if(typeof renderCharts!=='undefined')setTimeout(renderCharts,100);}
 
 function renderContent(){
   const sh=curShift; const s=S[sh]; const hrs=SHIFT_HOURS[sh]; const c=calc(sh);
@@ -252,27 +291,6 @@ function renderContent(){
   const clr=p=>p>=100?'good':p>=80?'warn':'bad';
 
   let html=`
-  <!-- INFO GERAL -->
-  <div class="sec">
-    <div class="sec-title">📋 Informações do Turno ${sh}</div>
-    <div class="info-grid">
-      <div class="info-item"><label>Data</label>
-        <input type="date" value="${s.date}" onchange="S['${sh}'].date=this.value;save()"></div>
-      <div class="info-item"><label>Início Linha</label>
-        <input type="time" value="${s.inicioLinha}" onchange="S['${sh}'].inicioLinha=this.value;save()"></div>
-      <div class="info-item"><label>Início Volumoso</label>
-        <input type="time" value="${s.inicioVol}" onchange="S['${sh}'].inicioVol=this.value;save()"></div>
-      <div class="info-item"><label>Hora Final</label>
-        <input type="time" value="${s.horaFinal}" onchange="S['${sh}'].horaFinal=this.value;save()"></div>
-      <div class="info-item"><label>Vol. Planejado</label>
-        <input type="number" value="${s.volPlan||''}" placeholder="0" onchange="S['${sh}'].volPlan=+this.value;save();renderContent()"></div>
-      <div class="info-item"><label>Vol. Processados</label>
-        <input type="number" value="${s.volProcess||''}" placeholder="0" onchange="S['${sh}'].volProcess=+this.value;save();renderContent()"></div>
-      <div class="info-item"><label>Vol. Roteirizado</label>
-        <input type="number" value="${s.volRoteir||''}" placeholder="0" onchange="S['${sh}'].volRoteir=+this.value;save();renderContent()"></div>
-      <div class="info-item"><label>Observações</label>
-        <input type="text" value="${s.obs||''}" placeholder="Obs..." onchange="S['${sh}'].obs=this.value;save()"></div>
-    </div>
   </div>
 
 
