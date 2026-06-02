@@ -174,10 +174,11 @@ function save(){
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2200);}
 
 // ── STATE ──
-const SHIFTS=['AM','PM','CHP'];
+const SHIFTS=['AM','PM','SD','CHP'];
 const SHIFT_HOURS={
   AM:['02:00','03:00','04:00','☕ ALMOÇO','05:00','06:00','07:00'],
   PM:['10:00','11:00','12:00','🍽 ALMOÇO','13:00','14:00'],
+  SD:['04:00','05:00'],
   CHP:['18:30','19:30','🍽 JANTAR','20:30','21:30']
 };
 const N_STN_LINE=4, N_STN_VOL=3, N_LH=6;
