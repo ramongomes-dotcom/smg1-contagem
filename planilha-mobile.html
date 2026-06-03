@@ -239,10 +239,10 @@ function saveState(){
 // ── STATE ──
 const SHIFTS=['AM','PM','SD','CHP'];
 const SHIFT_HOURS={
-  AM:['02:00','03:00','04:00','☕ ALMOÇO','05:00','06:00','07:00'],
-  PM:['10:00','11:00','12:00','🍽 ALMOÇO','13:00','14:00'],
-  SD:['04:00','05:00'],
-  CHP:['18:30','19:30','🍽 JANTAR','20:30','21:30']
+  AM:['02:00','02:30','03:00','03:30','04:00','04:30','☕ ALMOÇO','05:00','05:30','06:00','06:30','07:00'],
+  PM:['10:00','10:30','11:00','11:30','12:00','12:30','🍽 ALMOÇO','13:00','13:30','14:00','14:30'],
+  SD:['04:00','04:30','05:00','05:30'],
+  CHP:['18:30','19:00','19:30','🍽 JANTAR','20:00','20:30','21:00','21:30']
 };
 const N_STN_LINE=5, N_STN_VOL=3;
 const isBreak=h=>h.startsWith('☕')||h.startsWith('🍽');
@@ -268,7 +268,20 @@ function mkShift(sh){
 
 function loadState(){
   try{S=JSON.parse(localStorage.getItem('planilha-op')||'{}');}catch(e){}
-  SHIFTS.forEach(sh=>{if(!S[sh])S[sh]=mkShift(sh);});
+  SHIFTS.forEach(sh=>{
+    if(!S[sh])S[sh]=mkShift(sh);
+    const s=S[sh];
+    while(s.stnLineNames.length<N_STN_LINE)s.stnLineNames.push(`Estação ${s.stnLineNames.length+1} Linha`);
+    while(s.stnVolNames.length<N_STN_VOL)s.stnVolNames.push(`Estação ${s.stnVolNames.length+1} Volumoso`);
+    while(s.stnLineData.length<N_STN_LINE)s.stnLineData.push(Array(SHIFT_HOURS[sh].length).fill(''));
+    while(s.stnVolData.length<N_STN_VOL)s.stnVolData.push(Array(SHIFT_HOURS[sh].length).fill(''));
+    // Expandir arrays de horas se necessário (ex: mudança de 1h para 30min)
+    s.stnLineData=s.stnLineData.map(r=>{while(r.length<SHIFT_HOURS[sh].length)r.push('');return r;});
+    s.stnVolData=s.stnVolData.map(r=>{while(r.length<SHIFT_HOURS[sh].length)r.push('');return r;});
+    while(s.sortData.length<SHIFT_HOURS[sh].length)s.sortData.push('');
+    s.stnLineNames=s.stnLineNames.map((n,i)=>n||`Estação ${i+1} Linha`);
+    s.stnVolNames=s.stnVolNames.map((n,i)=>n||`Estação ${i+1} Volumoso`);
+  });
 }
 
 function hasData(sh,ci){
