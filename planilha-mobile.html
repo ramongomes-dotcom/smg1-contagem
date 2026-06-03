@@ -244,7 +244,7 @@ const SHIFT_HOURS={
   SD:['04:00','05:00'],
   CHP:['18:30','19:30','🍽 JANTAR','20:30','21:30']
 };
-const N_STN_LINE=4, N_STN_VOL=3;
+const N_STN_LINE=5, N_STN_VOL=3;
 const isBreak=h=>h.startsWith('☕')||h.startsWith('🍽');
 const num=v=>{const n=parseFloat(String(v||0).replace(/,/g,'.'));return isNaN(n)?0:n;};
 const fmt=n=>Math.round(n).toLocaleString('pt-BR');
