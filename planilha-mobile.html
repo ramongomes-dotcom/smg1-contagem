@@ -136,9 +136,12 @@ input,select,textarea{font-size:16px!important;font-family:inherit}
       <div class="field" style="margin-top:14px"><label>Data</label>
         <input type="date" id="f-data"></div>
       <div class="row2">
-        <div class="field"><label>Início Linha</label><input type="time" id="f-ini-linha"></div>
-        <div class="field"><label>Início Volumoso</label><input type="time" id="f-ini-vol"></div>
-        <div class="field"><label>Hora Final</label><input type="time" id="f-hora-final"></div>
+        <div class="field"><label>Início Linha</label>
+          <select id="f-ini-linha" style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;background:#fff;-webkit-appearance:none"></select></div>
+        <div class="field"><label>Início Volumoso</label>
+          <select id="f-ini-vol" style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;background:#fff;-webkit-appearance:none"></select></div>
+        <div class="field"><label>Hora Final</label>
+          <select id="f-hora-final" style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;background:#fff;-webkit-appearance:none"></select></div>
         <div class="field"><label>Tempo de Ops (h)</label><input type="number" id="f-tempo-ops" placeholder="0" inputmode="numeric"></div>
       </div>
     </div>
@@ -255,7 +258,7 @@ function mkShift(sh){
   const hrs=SHIFT_HOURS[sh];
   return{
     date:new Date().toISOString().slice(0,10),
-    inicioLinha:'',inicioVol:'',horaFinal:'',tempoOps:'',
+    inicioLinha:'08:00',inicioVol:'08:00',horaFinal:'',tempoOps:'',
     volPlan:0,volProcess:0,volRoteir:0,
     hcNecessario:0,hcFixos:0,hcPT:0,hcTemp:0,hcDiaristas:0,hcAusJust:0,hcAusInjust:0,
     stnLineNames:Array.from({length:N_STN_LINE},(_,i)=>`Estação ${i+1} Linha`),
@@ -485,9 +488,12 @@ function updateUI(){
   if(curStep===1 && curShift){
     const s=S[curShift];
     document.getElementById('f-data').value=s.date||new Date().toISOString().slice(0,10);
-    document.getElementById('f-ini-linha').value=s.inicioLinha||'';
-    document.getElementById('f-ini-vol').value=s.inicioVol||'';
-    document.getElementById('f-hora-final').value=s.horaFinal||'';
+    const il=document.getElementById('f-ini-linha');
+    const iv=document.getElementById('f-ini-vol');
+    const hf=document.getElementById('f-hora-final');
+    il.innerHTML=timeOpts(s.inicioLinha||'08:00');
+    iv.innerHTML=timeOpts(s.inicioVol||'08:00');
+    hf.innerHTML='<option value="">—</option>'+timeOpts(s.horaFinal||'');
     document.getElementById('f-tempo-ops').value=s.tempoOps||'';
   }
   if(curStep===3)buildHoraGrid();
@@ -503,6 +509,15 @@ function showToast(msg,color){
   t.style.color=color&&color!=='#1a1a1a'?'#fff':'var(--yel)';
   t.style.display='block';
   setTimeout(()=>t.style.display='none',2200);
+}
+
+function timeOpts(val){
+  const out=[];
+  for(let h=0;h<24;h++)for(let m of[0,30]){
+    const t=(h<10?'0'+h:h)+':'+(m===0?'00':'30');
+    out.push('<option value="'+t+'"'+(val===t?' selected':'')+'>'+t+'</option>');
+  }
+  return out.join('');
 }
 
 // BOOT
