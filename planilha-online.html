@@ -201,7 +201,7 @@ function mkShift(sh){
   const hrs=SHIFT_HOURS[sh];
   return{
     date:new Date().toISOString().slice(0,10),
-    inicioLinha:'', inicioVol:'', horaFinal:'', tempoOps:'',
+    inicioLinha:'08:00', inicioVol:'08:00', horaFinal:'', tempoOps:'',
     volPlan:0, volProcess:0, volRoteir:0,
     hcNecessario:0, hcFixos:0, hcPT:0, hcTemp:0, hcDiaristas:0, hcAusJust:0, hcAusInjust:0,
     stnLineNames:Array.from({length:N_STN_LINE},(_,i)=>`Estação ${i+1} Linha`),
@@ -269,6 +269,14 @@ function calc(sh){
 
 // ── RENDER ──
 
+function timeOpts(val){
+  const out=[];
+  for(let h=0;h<24;h++)for(let m of[0,30]){
+    const t=(h<10?'0'+h:h)+':'+(m===0?'00':'30');
+    out.push(`<option value="${t}" ${val===t?'selected':''}>${t}</option>`);
+  }
+  return out.join('');
+}
 function renderInfoBar(){
   const sh=curShift; const s=S[sh];
   document.getElementById('info-bar').innerHTML=`
@@ -277,11 +285,17 @@ function renderInfoBar(){
     <div class="info-bar-item"><label>Data</label>
       <input type="date" value="${s.date}" onchange="S['${sh}'].date=this.value;save()"></div>
     <div class="info-bar-item"><label>Início Linha</label>
-      <input type="time" value="${s.inicioLinha}" onchange="S['${sh}'].inicioLinha=this.value;save()"></div>
+      <select onchange="S['${sh}'].inicioLinha=this.value;save()" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.25);color:#fff;font-size:13px;font-weight:700;font-family:inherit;padding:2px 0;width:100%;min-width:80px">
+        ${timeOpts(s.inicioLinha||'08:00')}
+      </select></div>
     <div class="info-bar-item"><label>Início Volumoso</label>
-      <input type="time" value="${s.inicioVol}" onchange="S['${sh}'].inicioVol=this.value;save()"></div>
+      <select onchange="S['${sh}'].inicioVol=this.value;save()" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.25);color:#fff;font-size:13px;font-weight:700;font-family:inherit;padding:2px 0;width:100%;min-width:80px">
+        ${timeOpts(s.inicioVol||'08:00')}
+      </select></div>
     <div class="info-bar-item"><label>Hora Final</label>
-      <input type="time" value="${s.horaFinal}" onchange="S['${sh}'].horaFinal=this.value;save()"></div>
+      <select onchange="S['${sh}'].horaFinal=this.value;save()" style="background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.25);color:#fff;font-size:13px;font-weight:700;font-family:inherit;padding:2px 0;width:100%;min-width:80px">
+        ${timeOpts(s.horaFinal||'')}
+      </select></div>
     <div class="info-bar-sep"></div>
     <div class="info-bar-item"><label>Vol. Planejado</label>
       <input type="number" value="${s.volPlan||''}" placeholder="0" onchange="S['${sh}'].volPlan=+this.value;save();renderContent();renderCharts()"></div>
