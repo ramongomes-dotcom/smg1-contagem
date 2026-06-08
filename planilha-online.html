@@ -710,4 +710,138 @@ function openHist(){
   histLog(saved?'✅ URL configurada. Clique em "Salvar Histórico Agora" para enviar.':'⚠️ Nenhuma URL configurada. Cole a URL do Apps Script acima.');
   document.getElementById('hist-bg').classList.add('open');
 }
-function closeHist(){document.get
+function closeHist(){document.getElementById('hist-bg').classList.remove('open');}
+
+function saveHistUrl(){
+  const v=document.getElementById('hist-url-input').value.trim();
+  if(!v){histLog('❌ URL vazia!');return;}
+  if(!v.startsWith('https://script.google.com')){histLog('❌ URL inválida. Deve começar com https://script.google.com ...');return;}
+  localStorage.setItem(HIST_URL_KEY,v);
+  histLog('✅ URL salva com sucesso!');
+  toast('✅ URL do Apps Script configurada!');
+}
+
+function histLog(msg){
+  const el=document.getElementById('hist-log');
+  const ts=new Date().toLocaleTimeString('pt-BR');
+  el.innerHTML=`<span style="color:#aaa">[${ts}]</span> ${msg}<br>`+el.innerHTML;
+}
+
+async function salvarHistoricoAgora(){
+  const url=localStorage.getItem(HIST_URL_KEY)||'';
+  if(!url){
+    histLog('❌ Configure a URL do Apps Script primeiro!');
+    showHistBadge(false,'Configure a URL primeiro');
+    return;
+  }
+  histLog('⏳ Enviando dados para o Google Sheets...');
+  const badge=document.getElementById('hist-status-badge');
+  badge.style.display='none';
+  try{
+    // Usar no-cors pois o Apps Script não retorna CORS headers na primeira chamada
+    const resp=await fetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify(S)
+    });
+    const txt=await resp.text();
+    let ok=true;
+    try{const j=JSON.parse(txt);ok=j.ok!==false;}catch(e){}
+    if(ok){
+      histLog('✅ Dados salvos na planilha com sucesso!');
+      showHistBadge(true,'Salvo!');
+      toast('✅ Histórico salvo no Google Sheets!');
+    }else{
+      histLog('⚠️ Resposta inesperada: '+txt.slice(0,100));
+      showHistBadge(true,'Salvo (verifique a planilha)');
+    }
+  }catch(err){
+    // Se der erro de CORS, provavelmente foi mesmo com no-cors - tentar no-cors
+    try{
+      await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(S)});
+      histLog('✅ Dados enviados! (verifique a planilha — CORS mode)');
+      showHistBadge(true,'Enviado!');
+      toast('✅ Histórico enviado! Verifique a planilha.');
+    }catch(e2){
+      histLog('❌ Erro ao enviar: '+e2.message);
+      showHistBadge(false,'Erro de conexão');
+    }
+  }
+}
+
+function showHistBadge(ok,msg){
+  const b=document.getElementById('hist-status-badge');
+  b.style.display='inline-block';
+  b.className='hist-status '+(ok?'ok':'err');
+  b.textContent=ok?'✅ '+msg:'❌ '+msg;
+}
+
+function novoTurno(){
+  if(!confirm('Limpar dados do turno '+curShift+' para novo dia?\n\nDica: salve o histórico antes usando o botão 💾 Histórico.'))return;
+  S[curShift]=mkShift(curShift);save();renderContent();
+  toast('✅ Turno '+curShift+' zerado!');
+}
+
+// BOOT
+loadState();
+renderAll();
+setTimeout(renderCharts,100);
+try{initFB();}catch(e){setStatus(false);}
+</script>
+
+<!-- CHARTS DE EVOLUÇÃO -->
+<template id="tpl-charts">
+  <div class="chart-row" id="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">📦 Etiquetagem — Realizado vs Meta
+        <span id="etiq-pct-badge" style="font-size:11px;padding:2px 8px;border-radius:4px;background:#f0f0f0;color:#888;font-weight:700"></span>
+      </div>
+      <div class="chart-wrap"><canvas id="chart-etiq" role="img" aria-label="Etiquetagem realizado vs meta">Gráfico etiquetagem</canvas></div>
+      <div class="chart-legend" id="leg-etiq"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">🗂 Sorting — No Carrinho vs Roteirizado
+        <span id="sort-pct-badge" style="font-size:11px;padding:2px 8px;border-radius:4px;background:#f0f0f0;color:#888;font-weight:700"></span>
+      </div>
+      <div class="chart-wrap"><canvas id="chart-sort" role="img" aria-label="Sorting realizado vs meta">Gráfico sorting</canvas></div>
+      <div class="chart-legend" id="leg-sort"></div>
+    </div>
+  </div>
+</template>
+
+<!-- MODAL LANÇAMENTO -->
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h2>＋ Lançar Dados — Turno <span id="modal-turno"></span></h2>
+
+    <div class="modal-section">CONFIGURAÇÃO DO TURNO</div>
+    <div class="fgrid">
+      <div class="fitem"><label>Vol. Planejado</label><input type="number" id="m-volplan" placeholder="0" inputmode="numeric"></div>
+      <div class="fitem"><label>Vol. Roteirizado</label><input type="number" id="m-volroteir" placeholder="0" inputmode="numeric"></div>
+    </div>
+
+    <div class="modal-section">ETIQUETAGEM — HORA SELECIONADA</div>
+    <div class="fitem" style="margin-bottom:10px">
+      <label>Hora</label>
+      <select id="m-hora"></select>
+    </div>
+    <div class="fgrid cols3" id="m-estacoes-linha"></div>
+    <div class="fgrid cols3" id="m-estacoes-vol"></div>
+
+    <div class="modal-section">SORTING — HORA SELECIONADA</div>
+    <div class="fitem" style="margin-bottom:4px">
+      <label>No Carrinho (pcts)</label>
+      <input type="number" id="m-sort" placeholder="0" inputmode="numeric">
+    </div>
+
+    <div class="modal-section">HC DO TURNO</div>
+    <div class="fgrid cols3">
+      <div class="fitem"><label>Fixos</label><input type="number" id="m-fixos" placeholder="0" inputmode="numeric"></div>
+      <div class="fitem"><label>Part Time</label><input type="number" id="m-pt" placeholder="0" inputmode="numeric"></div>
+      <div class="fitem"><label>Temporários</label><input type="number" id="m-temp" placeholder="0" inputmode="numeric"></div>
+      <div class="fitem"><label>Diaristas</label><input type="number" id="m-diar" placeholder="0" inputmode="numeric"></div>
+      <div class="fitem"><label>Aus. Just.</label><input type="number" id="m-ausj" placeholder="0" inputmode="numeric"></div>
+      <div class="fitem"><label>Aus. Injust.</label><input type="number" id="m-ausi" placeholder="0" inputmode="numeric"></div>
+    </div>
+    <div class="fitem" style="margin-top:10px"><label>HC Necessário</label>
