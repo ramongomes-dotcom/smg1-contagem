@@ -104,7 +104,7 @@ tr.pct td{background:#f6f8ff;font-weight:700}
 
 
 /* MODAL LANÇAMENTO */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
 .modal-bg.open{display:flex}
 .modal{background:#fff;border-radius:14px;padding:20px;width:100%;max-width:520px;box-shadow:0 8px 40px rgba(0,0,0,.25);position:relative;margin:auto}
 .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#888}
@@ -651,6 +651,7 @@ function renderCharts(){
 
 // ── MODAL ──
 function openModal(){
+  try{
   const sh=curShift; const s=S[sh]; const hrs=SHIFT_HOURS[sh];
   document.getElementById('modal-turno').textContent=sh;
 
@@ -698,6 +699,7 @@ function openModal(){
   };
 
   document.getElementById('modal-bg').classList.add('open');
+  }catch(err){toast('❌ Erro ao abrir modal: '+err.message);console.error('openModal error:',err);}
 }
 
 function closeModal(){document.getElementById('modal-bg').classList.remove('open');}
@@ -872,6 +874,4 @@ try{initFB();}catch(e){setStatus(false);}
     <div class="fgrid cols3" id="m-estacoes-vol"></div>
 
     <div class="modal-section">SORTING — HORA SELECIONADA</div>
-    <div class="fitem" style="margin-bottom:4px">
-      <label>No Carrinho (pcts)</label>
-      <input type="number" id="m-sort" placeholder="
+    <div class="fitem" style="marg
