@@ -206,11 +206,21 @@ tr.pct td{background:#f6f8ff;font-weight:700}
 <script>
 // ── FIREBASE ──
 const FB={apiKey:"AIzaSyC48VRl8d3v6SAA2nDp3m1iJCXx2GNHLO0",authDomain:"smg1-contagem-2026.firebaseapp.com",databaseURL:"https://smg1-contagem-2026-default-rtdb.firebaseio.com",projectId:"smg1-contagem-2026",storageBucket:"smg1-contagem-2026.firebasestorage.app",messagingSenderId:"845783097839",appId:"1:845783097839:web:20a5ff6aa4655342a5161a"};
-let db=null;
+let db=null, _fbConnected=false;
 function initFB(){
   try{firebase.app();}catch(e){firebase.initializeApp(FB);}
   db=firebase.database();
-  setStatus(true);
+
+  // Timeout: se não conectar em 8s, mostra offline mas mantém app funcionando
+  const fbTimeout=setTimeout(()=>{if(!_fbConnected)setStatus(false);},8000);
+
+  // Detector real de conexão Firebase
+  db.ref('.info/connected').on('value',snap=>{
+    _fbConnected=snap.val()===true;
+    clearTimeout(fbTimeout);
+    setStatus(_fbConnected);
+  });
+
   db.ref('planilha-op').on('value',snap=>{
     if(!snap.exists())return;
     const remote=snap.val();
@@ -222,7 +232,11 @@ function initFB(){
     toast('🔄 Atualizado em tempo real');
   });
 }
-function setStatus(ok){document.getElementById('fb-status').textContent=ok?'🟢 Online':'🔴 Offline';document.getElementById('fb-status').style.color=ok?'#52c41a':'#ff4d4f';}
+function setStatus(ok){
+  const el=document.getElementById('fb-status');
+  el.textContent=ok?'🟢 Online':'🔴 Offline (local)';
+  el.style.color=ok?'#52c41a':'#ff7700';
+}
 function save(){
   localStorage.setItem('planilha-op',JSON.stringify(S));
   if(db)db.ref('planilha-op').set(S).catch(()=>setStatus(false));
@@ -841,7 +855,4 @@ try{initFB();}catch(e){setStatus(false);}
       <div class="fitem"><label>Part Time</label><input type="number" id="m-pt" placeholder="0" inputmode="numeric"></div>
       <div class="fitem"><label>Temporários</label><input type="number" id="m-temp" placeholder="0" inputmode="numeric"></div>
       <div class="fitem"><label>Diaristas</label><input type="number" id="m-diar" placeholder="0" inputmode="numeric"></div>
-      <div class="fitem"><label>Aus. Just.</label><input type="number" id="m-ausj" placeholder="0" inputmode="numeric"></div>
-      <div class="fitem"><label>Aus. Injust.</label><input type="number" id="m-ausi" placeholder="0" inputmode="numeric"></div>
-    </div>
-    <div class="fitem" style="margin-top:10px"><label>HC Necessário</label><input type="
+      <di
