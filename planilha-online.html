@@ -217,7 +217,7 @@ function initFB(){
     if(JSON.stringify(remote)===JSON.stringify(S))return;
     S=remote;
     ensureShifts();
-    renderInfoBar();render();
+    renderAll();
     setTimeout(renderCharts,100);
     toast('🔄 Atualizado em tempo real');
   });
@@ -844,4 +844,4 @@ try{initFB();}catch(e){setStatus(false);}
       <div class="fitem"><label>Aus. Just.</label><input type="number" id="m-ausj" placeholder="0" inputmode="numeric"></div>
       <div class="fitem"><label>Aus. Injust.</label><input type="number" id="m-ausi" placeholder="0" inputmode="numeric"></div>
     </div>
-    <div class="fitem" style="margin-top:10px"><label>HC Necessário</label>
+    <div class="fitem" style="margin-top:10px"><label>HC Necessário</label><input type="
