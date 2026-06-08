@@ -874,4 +874,25 @@ try{initFB();}catch(e){setStatus(false);}
     <div class="fgrid cols3" id="m-estacoes-vol"></div>
 
     <div class="modal-section">SORTING — HORA SELECIONADA</div>
-    <div class="fitem" style="marg
+    <div class="fitem" style="margin-bottom:4px">
+      <label>No Carrinho (pcts)</label>
+      <input type="number" id="m-sort" placeholder="0" inputmode="numeric">
+    </div>
+
+    <div class="modal-section">HC DO TURNO</div>
+    <div class="fgrid cols3">
+      <div class="fitem"><label>Fixos</label><input type="number" id="m-fixos" placeholder="0" inputmode="numeric"></div>
+      <div class="fitem"><label>Part Time</label><input type="number" id="m-pt" placeholder="0" inputmode="numeric"></div>
+      <div class="fitem"><label>Temporários</label><input type="number" id="m-temp" placeholder="0" inputmode="numeric"></div>
+      <div class="fitem"><label>Diaristas</label><input type="number" id="m-diar" placeholder="0" inputmode="numeric"></div>
+      <div class="fitem"><label>Aus. Just.</label><input type="number" id="m-ausj" placeholder="0" inputmode="numeric"></div>
+      <div class="fitem"><label>Aus. Injust.</label><input type="number" id="m-ausi" placeholder="0" inputmode="numeric"></div>
+    </div>
+    <div class="fitem" style="margin-top:10px"><label>HC Necessário</label><input type="number" id="m-hcnec" placeholder="0" inputmode="numeric"></div>
+
+    <button class="btn-save-modal" onclick="saveModal()">💾 Salvar e Atualizar</button>
+  </div>
+</div>
+
+</body>
+</html>
