@@ -138,6 +138,30 @@ tr.pct td{background:#f6f8ff;font-weight:700}
   .info-grid{grid-template-columns:1fr 1fr}
   .hc-grid{grid-template-columns:1fr 1fr}
 }
+
+/* HISTÓRICO MODAL */
+.hist-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center}
+.hist-bg.open{display:flex}
+.hist-box{background:#fff;border-radius:12px;padding:28px 32px;width:520px;max-width:95vw;box-shadow:0 8px 40px rgba(0,0,0,.25);position:relative}
+.hist-box h2{font-size:16px;font-weight:900;margin-bottom:4px;color:var(--blk)}
+.hist-box p{font-size:12px;color:#888;margin-bottom:20px}
+.hist-url-row{display:flex;gap:8px;margin-bottom:16px}
+.hist-url-row input{flex:1;padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit}
+.hist-url-row input:focus{outline:none;border-color:var(--yel)}
+.hist-url-row button{background:var(--blk);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}
+.hist-url-row button:hover{background:#333}
+.hist-log{background:#f8f8f8;border:1px solid #e0e0e0;border-radius:8px;padding:12px;max-height:160px;overflow-y:auto;font-size:11px;color:#555;margin-bottom:16px;line-height:1.7;min-height:48px}
+.hist-actions{display:flex;gap:10px;flex-wrap:wrap}
+.hist-btn{border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer}
+.hist-btn.save-now{background:var(--yel);color:var(--blk)}
+.hist-btn.save-now:hover{background:#ffe033}
+.hist-btn.close-hist{background:#f0f0f0;color:#555}
+.hist-btn.close-hist:hover{background:#e0e0e0}
+.hist-status{font-size:11px;font-weight:700;padding:4px 10px;border-radius:5px;align-self:center}
+.hist-status.ok{background:#f6ffed;color:#389e0d}
+.hist-status.err{background:#fff1f0;color:#cf1322}
+.hist-btn.btn-config{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer}
+.hist-btn.btn-config:hover{background:rgba(255,255,255,.25)}
 </style>
 </head>
 <body>
@@ -152,7 +176,26 @@ tr.pct td{background:#f6f8ff;font-weight:700}
     <a href="planilha-mobile.html" target="_blank" style="text-decoration:none"><button class="btn-hdr" style="font-size:13px;padding:7px 14px">📱 Mobile</button></a>
     <button class="btn-hdr" onclick="openModal()" style="font-size:14px;padding:8px 18px">＋ Lançar</button>
     <button class="btn-ghost" onclick="window.print()">🖨 Imprimir</button>
+    <button class="btn-hdr" style="background:#2ecc71" onclick="openHist()">💾 Histórico</button>
     <button class="btn-hdr" onclick="novoTurno()">📅 Novo Turno</button>
+  </div>
+</div>
+
+<!-- HISTÓRICO MODAL -->
+<div class="hist-bg" id="hist-bg" onclick="if(event.target===this)closeHist()">
+  <div class="hist-box">
+    <h2>💾 Salvar Histórico no Google Sheets</h2>
+    <p>Configure a URL do Apps Script para salvar os dados de todos os turnos na planilha.</p>
+    <div class="hist-url-row">
+      <input type="text" id="hist-url-input" placeholder="https://script.google.com/macros/s/.../exec">
+      <button onclick="saveHistUrl()">Salvar URL</button>
+    </div>
+    <div class="hist-log" id="hist-log">Nenhuma ação ainda.</div>
+    <div class="hist-actions">
+      <button class="hist-btn save-now" onclick="salvarHistoricoAgora()">📤 Salvar Histórico Agora</button>
+      <button class="hist-btn close-hist" onclick="closeHist()">✕ Fechar</button>
+      <span class="hist-status" id="hist-status-badge" style="display:none"></span>
+    </div>
   </div>
 </div>
 
@@ -656,73 +699,15 @@ function saveModal(){
   toast('✅ Dados salvos!');
 }
 
-// BOOT
-loadState();
-renderAll();
-setTimeout(renderCharts,100);
-try{initFB();}catch(e){setStatus(false);}
-</script>
+// ── HISTÓRICO (Google Sheets via Apps Script) ──
+const HIST_URL_KEY='smg1-apps-script-url';
 
-<!-- CHARTS DE EVOLUÇÃO -->
-<template id="tpl-charts">
-  <div class="chart-row" id="charts-row">
-    <div class="chart-card">
-      <div class="chart-title">📦 Etiquetagem — Realizado vs Meta
-        <span id="etiq-pct-badge" style="font-size:11px;padding:2px 8px;border-radius:4px;background:#f0f0f0;color:#888;font-weight:700"></span>
-      </div>
-      <div class="chart-wrap"><canvas id="chart-etiq" role="img" aria-label="Etiquetagem realizado vs meta">Gráfico etiquetagem</canvas></div>
-      <div class="chart-legend" id="leg-etiq"></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">🗂 Sorting — No Carrinho vs Roteirizado
-        <span id="sort-pct-badge" style="font-size:11px;padding:2px 8px;border-radius:4px;background:#f0f0f0;color:#888;font-weight:700"></span>
-      </div>
-      <div class="chart-wrap"><canvas id="chart-sort" role="img" aria-label="Sorting realizado vs meta">Gráfico sorting</canvas></div>
-      <div class="chart-legend" id="leg-sort"></div>
-    </div>
-  </div>
-</template>
-
-<!-- MODAL LANÇAMENTO -->
-<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeModal()">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal()">✕</button>
-    <h2>＋ Lançar Dados — Turno <span id="modal-turno"></span></h2>
-
-    <div class="modal-section">CONFIGURAÇÃO DO TURNO</div>
-    <div class="fgrid">
-      <div class="fitem"><label>Vol. Planejado</label><input type="number" id="m-volplan" placeholder="0" inputmode="numeric"></div>
-      <div class="fitem"><label>Vol. Roteirizado</label><input type="number" id="m-volroteir" placeholder="0" inputmode="numeric"></div>
-    </div>
-
-    <div class="modal-section">ETIQUETAGEM — HORA SELECIONADA</div>
-    <div class="fitem" style="margin-bottom:10px">
-      <label>Hora</label>
-      <select id="m-hora"></select>
-    </div>
-    <div class="fgrid cols3" id="m-estacoes-linha"></div>
-    <div class="fgrid cols3" id="m-estacoes-vol"></div>
-
-    <div class="modal-section">SORTING — HORA SELECIONADA</div>
-    <div class="fitem" style="margin-bottom:4px">
-      <label>No Carrinho (pcts)</label>
-      <input type="number" id="m-sort" placeholder="0" inputmode="numeric">
-    </div>
-
-    <div class="modal-section">HC DO TURNO</div>
-    <div class="fgrid cols3">
-      <div class="fitem"><label>Fixos</label><input type="number" id="m-fixos" placeholder="0" inputmode="numeric"></div>
-      <div class="fitem"><label>Part Time</label><input type="number" id="m-pt" placeholder="0" inputmode="numeric"></div>
-      <div class="fitem"><label>Temporários</label><input type="number" id="m-temp" placeholder="0" inputmode="numeric"></div>
-      <div class="fitem"><label>Diaristas</label><input type="number" id="m-diar" placeholder="0" inputmode="numeric"></div>
-      <div class="fitem"><label>Aus. Just.</label><input type="number" id="m-ausj" placeholder="0" inputmode="numeric"></div>
-      <div class="fitem"><label>Aus. Injust.</label><input type="number" id="m-ausi" placeholder="0" inputmode="numeric"></div>
-    </div>
-    <div class="fitem" style="margin-top:10px"><label>HC Necessário</label><input type="number" id="m-hcnec" placeholder="0" inputmode="numeric"></div>
-
-    <button class="btn-save-modal" onclick="saveModal()">💾 Salvar e Atualizar</button>
-  </div>
-</div>
-
-</body>
-</html>
+function openHist(){
+  const saved=localStorage.getItem(HIST_URL_KEY)||'';
+  document.getElementById('hist-url-input').value=saved;
+  const badge=document.getElementById('hist-status-badge');
+  badge.style.display='none';
+  histLog(saved?'✅ URL configurada. Clique em "Salvar Histórico Agora" para enviar.':'⚠️ Nenhuma URL configurada. Cole a URL do Apps Script acima.');
+  document.getElementById('hist-bg').classList.add('open');
+}
+function closeHist(){document.get
