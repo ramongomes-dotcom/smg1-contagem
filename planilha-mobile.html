@@ -104,9 +104,37 @@ input,select,textarea{font-size:16px!important;font-family:inherit}
 
 /* TOAST */
 #toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:var(--blk);color:var(--yel);padding:10px 20px;border-radius:8px;font-size:13px;font-weight:800;display:none;z-index:999;white-space:nowrap}
+
+/* HIST MODAL MOBILE */
+.hist-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:300;align-items:flex-end;justify-content:center}
+.hist-bg.open{display:flex}
+.hist-box{background:#fff;border-radius:20px 20px 0 0;padding:24px 20px 36px;width:100%;max-height:90vh;overflow-y:auto}
+.hist-box h2{font-size:16px;font-weight:900;margin-bottom:4px}
+.hist-box p{font-size:12px;color:#888;margin-bottom:16px}
+.hist-url-wrap input{width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-size:13px!important;font-family:inherit;margin-bottom:10px}
+.hist-url-wrap input:focus{outline:none;border-color:var(--yel)}
+.hist-url-wrap button{width:100%;padding:14px;border:none;border-radius:10px;background:var(--blk);color:#fff;font-size:14px;font-weight:900;cursor:pointer;margin-bottom:12px}
+.hist-log-m{background:#f8f8f8;border-radius:10px;padding:12px;font-size:11px;color:#666;max-height:120px;overflow-y:auto;margin-bottom:16px;line-height:1.7}
+.hist-save-btn{width:100%;padding:16px;border:none;border-radius:12px;background:#2ecc71;color:#fff;font-size:16px;font-weight:900;cursor:pointer;margin-bottom:10px}
+.hist-close-btn{width:100%;padding:14px;border:none;border-radius:12px;background:#f0f0f0;color:#666;font-size:14px;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
+<!-- HIST MODAL MOBILE -->
+<div class="hist-bg" id="hist-bg" onclick="if(event.target===this)closeHist()">
+  <div class="hist-box">
+    <h2>💾 Histórico — Google Sheets</h2>
+    <p>Configure a URL do Apps Script para salvar os dados na planilha.</p>
+    <div class="hist-url-wrap">
+      <input type="text" id="hist-url-input" placeholder="https://script.google.com/macros/s/.../exec">
+      <button onclick="saveHistUrl()">✅ Salvar URL</button>
+    </div>
+    <div class="hist-log-m" id="hist-log">Aguardando ação...</div>
+    <button class="hist-save-btn" onclick="salvarHistoricoAgora()">📤 Salvar Histórico Agora</button>
+    <button class="hist-close-btn" onclick="closeHist()">Fechar</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <div class="hdr">
@@ -116,7 +144,10 @@ input,select,textarea{font-size:16px!important;font-family:inherit}
     </a>
     <h1>Lançamento <em>Operacional</em></h1>
   </div>
-  <span id="fb-dot" style="font-size:13px" title="Status Firebase">⚫</span>
+  <div style="display:flex;align-items:center;gap:8px">
+    <button onclick="openHist()" style="background:#2ecc71;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:800;cursor:pointer">💾</button>
+    <span id="fb-dot" style="font-size:13px" title="Status Firebase">⚫</span>
+  </div>
 </div>
 <div class="prog"><div class="prog-fill" id="prog-fill" style="width:14%"></div></div>
 
@@ -467,64 +498,4 @@ function updateUI(){
   // Dots
   document.getElementById('step-dots').innerHTML=Array.from({length:N_STEPS},(_,i)=>{
     const cls=i+1<curStep?'done':i+1===curStep?'active':'';
-    return`<div class="step-dot ${cls}"></div>`;
-  }).join('');
-
-  document.getElementById('prog-fill').style.width=(curStep/N_STEPS*100)+'%';
-  document.getElementById('btn-back').style.display=curStep===1?'none':'block';
-  const nb=document.getElementById('btn-next');
-  if(curStep===N_STEPS){nb.textContent='💾 Salvar';nb.className='btn btn-save';}
-  else{nb.textContent='Avançar →';nb.className='btn btn-next';}
-
-  for(let i=1;i<=N_STEPS;i++)document.getElementById('step-'+i).style.display=i===curStep?'block':'none';
-
-  // Preencher campos ao entrar na etapa
-  if(curStep===2 && curShift){
-    const s=S[curShift];
-    document.getElementById('f-vol-plan').value=s.volPlan||'';
-    document.getElementById('f-vol-proc').value=s.volProcess||'';
-    document.getElementById('f-vol-rot').value=s.volRoteir||'';
-  }
-  if(curStep===1 && curShift){
-    const s=S[curShift];
-    document.getElementById('f-data').value=s.date||new Date().toISOString().slice(0,10);
-    const il=document.getElementById('f-ini-linha');
-    const iv=document.getElementById('f-ini-vol');
-    const hf=document.getElementById('f-hora-final');
-    il.innerHTML=timeOpts(s.inicioLinha||'08:00');
-    iv.innerHTML=timeOpts(s.inicioVol||'08:00');
-    hf.innerHTML='<option value="">—</option>'+timeOpts(s.horaFinal||'');
-    document.getElementById('f-tempo-ops').value=s.tempoOps||'';
-  }
-  if(curStep===3)buildHoraGrid();
-  else if(curStep===4)buildStep4();
-  else if(curStep===5)buildStep5();
-  else if(curStep===6)buildStep6();
-  else if(curStep===7)buildStep7();
-}
-
-function showToast(msg,color){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.style.background=color||'#1a1a1a';
-  t.style.color=color&&color!=='#1a1a1a'?'#fff':'var(--yel)';
-  t.style.display='block';
-  setTimeout(()=>t.style.display='none',2200);
-}
-
-function timeOpts(val){
-  const out=[];
-  for(let h=0;h<24;h++)for(let m of[0,30]){
-    const t=(h<10?'0'+h:h)+':'+(m===0?'00':'30');
-    out.push('<option value="'+t+'"'+(val===t?' selected':'')+'>'+t+'</option>');
-  }
-  return out.join('');
-}
-
-// BOOT
-loadState();
-document.getElementById('f-data').value=new Date().toISOString().slice(0,10);
-updateUI();
-try{initFB();}catch(e){document.getElementById('fb-dot').textContent='🔴';}
-</script>
-</body>
-</html>
+    return
