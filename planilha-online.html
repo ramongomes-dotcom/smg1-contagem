@@ -271,20 +271,48 @@ function mkShift(sh){
   };
 }
 
+// Firebase converte arrays em objetos {0:v,1:v,...} — esta função converte de volta
+function toArr(v,len,def){
+  if(Array.isArray(v))return v;
+  if(v&&typeof v==='object'){
+    const max=Math.max(...Object.keys(v).map(Number).filter(n=>!isNaN(n)));
+    const arr=[];
+    for(let i=0;i<=Math.max(max,len-1);i++)arr.push(v[i]!==undefined?v[i]:def);
+    return arr;
+  }
+  return Array(len).fill(def);
+}
+
 function ensureShifts(){
   SHIFTS.forEach(sh=>{
     if(!S[sh])S[sh]=mkShift(sh);
     const s=S[sh];
-    // Garantir tamanho correto dos arrays de nomes e dados
-    while(s.stnLineNames.length<N_STN_LINE)s.stnLineNames.push(`Estação ${s.stnLineNames.length+1} Linha`);
-    while(s.stnVolNames.length<N_STN_VOL)s.stnVolNames.push(`Estação ${s.stnVolNames.length+1} Volumoso`);
-    while(s.stnLineData.length<N_STN_LINE)s.stnLineData.push(Array(SHIFT_HOURS[sh].length).fill(''));
-    while(s.stnVolData.length<N_STN_VOL)s.stnVolData.push(Array(SHIFT_HOURS[sh].length).fill(''));
-    // Expandir arrays de horas se necessário (ex: mudança de 1h para 30min)
-    s.stnLineData=s.stnLineData.map(r=>{while(r.length<SHIFT_HOURS[sh].length)r.push('');return r;});
-    s.stnVolData=s.stnVolData.map(r=>{while(r.length<SHIFT_HOURS[sh].length)r.push('');return r;});
-    while(s.sortData.length<SHIFT_HOURS[sh].length)s.sortData.push('');
-    // Garantir que nomes vazios ficam com padrão
+    const hLen=SHIFT_HOURS[sh].length;
+
+    // Converter objetos Firebase de volta para arrays
+    s.stnLineNames=toArr(s.stnLineNames,N_STN_LINE,'');
+    s.stnVolNames=toArr(s.stnVolNames,N_STN_VOL,'');
+    s.sortData=toArr(s.sortData,hLen,'');
+    s.stnLineData=toArr(s.stnLineData,N_STN_LINE,[]).map((r,i)=>{
+      const arr=toArr(r,hLen,'');
+      while(arr.length<hLen)arr.push('');
+      return arr;
+    });
+    s.stnVolData=toArr(s.stnVolData,N_STN_VOL,[]).map((r,i)=>{
+      const arr=toArr(r,hLen,'');
+      while(arr.length<hLen)arr.push('');
+      return arr;
+    });
+    s.lineHaul=toArr(s.lineHaul,N_LH,{}).map(r=>r&&typeof r==='object'?r:{origem:'',volume:'',eta:'',chegou:''});
+
+    // Garantir tamanho mínimo
+    while(s.stnLineNames.length<N_STN_LINE)s.stnLineNames.push('');
+    while(s.stnVolNames.length<N_STN_VOL)s.stnVolNames.push('');
+    while(s.stnLineData.length<N_STN_LINE)s.stnLineData.push(Array(hLen).fill(''));
+    while(s.stnVolData.length<N_STN_VOL)s.stnVolData.push(Array(hLen).fill(''));
+    while(s.sortData.length<hLen)s.sortData.push('');
+
+    // Nomes padrão
     s.stnLineNames=s.stnLineNames.map((n,i)=>n||`Estação ${i+1} Linha`);
     s.stnVolNames=s.stnVolNames.map((n,i)=>n||`Estação ${i+1} Volumoso`);
   });
@@ -846,13 +874,4 @@ try{initFB();}catch(e){setStatus(false);}
     <div class="modal-section">SORTING — HORA SELECIONADA</div>
     <div class="fitem" style="margin-bottom:4px">
       <label>No Carrinho (pcts)</label>
-      <input type="number" id="m-sort" placeholder="0" inputmode="numeric">
-    </div>
-
-    <div class="modal-section">HC DO TURNO</div>
-    <div class="fgrid cols3">
-      <div class="fitem"><label>Fixos</label><input type="number" id="m-fixos" placeholder="0" inputmode="numeric"></div>
-      <div class="fitem"><label>Part Time</label><input type="number" id="m-pt" placeholder="0" inputmode="numeric"></div>
-      <div class="fitem"><label>Temporários</label><input type="number" id="m-temp" placeholder="0" inputmode="numeric"></div>
-      <div class="fitem"><label>Diaristas</label><input type="number" id="m-diar" placeholder="0" inputmode="numeric"></div>
-      <di
+      <input type="number" id="m-sort" placeholder="
